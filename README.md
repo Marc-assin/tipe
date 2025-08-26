@@ -1,1 +1,1 @@
-# tipe
+# Génération d'un bestiaire de noeuds premiers
