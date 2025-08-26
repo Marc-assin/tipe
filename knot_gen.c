@@ -44,6 +44,34 @@ int abs(int x) {
     return (x < 0) ? -x : x;
 }
 
+void calculer_a_i(int* p, seq_dt* s){   //On remplit les cases de 1 à 2n par leur binôme dans 1 à 2n
+    for(int i=0; i<s->taille; i++){
+        p[2*i+1] = 2*s->seq[i];
+        p[2*s->seq[i]] = 2*i+1;
+    }
+}
+
+void calculer_phi(int** phi, int* a, int n){
+    for(int i=1; i<=2*n; i++){
+        phi[i][i] = 1;
+        for(int r=i+1; r<=2*n; r++){
+            if(a[r]<= a[i] && i <= a[r]){
+                phi[i][r] = -phi[i][r-1];
+            } else {
+                phi[i][r] = phi[i][r-1];
+            }
+        }
+        for(int r=i-1; r>0; r--){
+            if(a[r+1]<= a[i] && i <= a[r+1]){
+                phi[i][r] = -phi[i][r+1];
+            } else {
+                phi[i][r] = phi[i][r+1];
+            }
+        }
+    }
+}
+
+
 // ordre : ordre des permutations, puis ordre des sous parties pour les signes
 void next_seq_dt(seq_dt *s) {
     if (s->seq == NULL || s->taille <= 0) {
