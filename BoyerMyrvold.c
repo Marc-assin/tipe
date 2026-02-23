@@ -50,10 +50,10 @@ double_liste* insertion(double_liste* lst, int x){ //insere avant la cellule sel
     double_liste* cellule = malloc(sizeof(double_liste));
     cellule->val = x;
     if(lst != NULL){
-        cellule->prec = lst;
-        cellule->suiv = lst->suiv;
-        lst->suiv = cellule;
-        lst->suiv->prec = cellule;
+        cellule->suiv = lst;
+        cellule->prec = lst->prec;
+        lst->prec->suiv = cellule;
+        lst->prec = cellule;
         
     } else {
         cellule->suiv = cellule;
@@ -69,7 +69,7 @@ double_liste* suppression(double_liste* lst){
     }
     lst->prec->suiv = lst->suiv;
     lst->suiv->prec = lst->prec;
-    double_liste* res = lst->prec;
+    double_liste* res = lst->suiv;
     free(lst);
     return res;
 };
@@ -181,7 +181,7 @@ graphe conversion_seqDT(seq_dt s){
     int* signes = malloc(n*sizeof(int*));
     for(int i=0; i<n;i++){
         adj[i] = malloc(4*sizeof(int));
-        signes[i] = signe(2*s.seq[i]);
+        signes[i] = signe(s.seq[i]);
     };
     //La case 0 correspond au numéro impair
     //La case 1 au numéro pair
@@ -189,13 +189,13 @@ graphe conversion_seqDT(seq_dt s){
     //la case 3 à la continuation du pair 
     adj[0][0] = paires[2*n]/2; //Correspond au numero 2*n
     adj[0][1] = (paires[1]/2-1);
-    adj[paires[2*n]/2][3] = 0; //Correspond à la continuation du pair 2*n final
+ //   adj[paires[2*n]/2][3] = 0; //Correspond à la continuation du pair 2*n final
     for(int i=1; i<n;i++){
         adj[i][0] = paires[2*i]/2; //Correspond à l'impair entrant
         adj[i][1] = (paires[2*i+1]/2-1); //Correspond au pair entrant
     };
     for(int i=0; i<n;i++){
-        adj[i][3] = ((paires[2*i+1]+1)%12)/2; //Correspond à la continuation du pair
+        adj[i][3] = ((paires[2*i+1]+1)%(2*n))/2; //Correspond à la continuation du pair
         adj[i][2] = paires[2*i+2]/2; //Correspond à la continuation de l'impair
     };
     graphe res = {
@@ -272,7 +272,7 @@ void DFS(graphe g, graphe* newg, bool* vus, int s, int* index){
     }
     newg->adj[s] = vois;
     newg->type[s] = types;
-    for(int i = 1; i<nb_vois; i++){
+    for(int i = 0; i<nb_vois; i++){
         if(!vus[newg->adj[s][i]]){
             DFS(g,newg,vus,g.adj[s][i], index);
         } else {
@@ -353,6 +353,7 @@ void precalcul(graphe g, graphe_comb *gtilde){
             lst = insertion(lst, voisins_tries[v]);
             gtilde->S[voisins_tries[v]].p_parentDFS = lst;
         }
+        free(voisins_tries);
         gtilde->S[s].enfantsDFS = lst;
     }
 }
