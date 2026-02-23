@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "cairo.h": "c"
+        "cairo.h": "c",
+        "stdio.h": "c"
     }
 }

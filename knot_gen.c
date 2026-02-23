@@ -6,7 +6,7 @@
 
 struct seq_dt {
     int *seq; // on stocke seulement les nombre pairs, divisés par 2
-    int taille;
+    int taille; //nombre de croisements
 };
 
 typedef struct seq_dt seq_dt;
@@ -28,7 +28,7 @@ void free_seq_dt(seq_dt *s) {
     s->taille = 0;
 }
 
-void print_seq_dt(const seq_dt *s) {
+void print_seq_dt(seq_dt *s) {
     if (s->seq == NULL || s->taille <= 0) {
         printf("La séquence est vide.\n");
         return;

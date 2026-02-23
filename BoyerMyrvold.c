@@ -1,6 +1,7 @@
 #include "knot_gen.c"
+#include <stdio.h>
 
-//Structutes utiles
+//Structures utiles
 struct intlist{
     int val;
     struct intlist* next;
@@ -62,7 +63,7 @@ double_liste* insertion(double_liste* lst, int x){ //insere avant la cellule sel
 };
 
 double_liste* suppression(double_liste* lst){
-    if(lst->prec = lst) {
+    if(lst->prec == lst) {
         free(lst);
         return NULL;
     }
@@ -76,7 +77,12 @@ double_liste* suppression(double_liste* lst){
 //Graphe d'entrée
 struct graphe{
     int n;
-    int** adj; //tableau de tableaux de taille 4
+    int** adj; //tableau de tableaux de taille au plus 4, les arêtes negatives signifient que le fil passe en-dessous
+    int* signes; //tableau indiquant si les fils arrivant par les impairs sont en dessous
+    //données pour les graphes simplifiés:
+    int* degre; //degre de chaque sommet
+    int** type; //tableau indiquant si l'arête est une arete directe ou retour (signe) et si elle est simple ou double (valeur absolue)
+    int* DFI; //tableau indiquant l'ordre du DFS
 };
 
 typedef struct graphe graphe;
@@ -99,7 +105,7 @@ struct sommet{
     lien_adjacence* adj; //tableau de taille 2
     int parentDFS;
     int DFI;
-    int ancetre_lointain;
+    int petit_ancetre;
     int point_min;
     int visite;
     int flag_arete_retour;
@@ -117,10 +123,11 @@ struct sommet_racine{
 
 typedef struct sommet_racine sommet_racine;
 
-struct demi_arete{
-    lien_adjacence* adj; //tableau de taille 2
-    int voisin;
-    int signe; // 1 ou -1 
+struct demi_arete{ //NOMS A ECHANGER
+    lien_adjacence* adj; //tableau de taille 2: indique l'ordre circulaire
+    int voisin; //vers quoi l'arête pointe
+    int signe; // 1 ou -1 selon si on est un tree edge ou back edge
+    int type; //Double: 0; au-dessus: 1; en-dessous: -1
 };
 
 typedef struct demi_arete demi_arete;
@@ -136,45 +143,207 @@ struct graphe_comb{
 
 typedef struct graphe_comb graphe_comb;
 
+int signe(int k){
+    if (k<0) return (-1); 
+    return 1;
+}
+
+//Fonctions d'affichage
+void print_graphe(graphe g){
+    for(int i=0; i<g.n; i++){
+        printf("%d: %d,%d,%d,%d, signe: %d\n", i, g.adj[i][0], g.adj[i][1], g.adj[i][2], g.adj[i][3], g.signes[i]);
+    }
+}
+
+void print_tab(int* tab, int n){
+    printf("n=%d: ", n);
+    for(int i=0; i<n; i++){
+        printf("%d;", tab[i]);
+    }
+    printf("\n");
+}
+
+//Precalcul
+
+//Convertit une sequence DT en un graphe
 graphe conversion_seqDT(seq_dt s){
     int n = s.taille;
-    int** adj = malloc(n*sizeof(int*));
+    //printf("n=%d\n", n);
+    int** adj = malloc(n*sizeof(int*)); //sommet i correspond au numéro de séquence 2*i+1
     //Un tableau avec la paire de tous les numéros de la séquence
     int* paires = malloc((2*n+1)*sizeof(int)); //les numéros allant de 1 à 2n+1, la case 0 est inallouée et inutile
+    paires[0] = -1;
     for(int i=0; i<n; i++){
-        paires[2*i+1] = 2*s.seq[i];
-        paires[2*s.seq[i]] = 2*i+1;
+        paires[2*i+1] = abs(2*s.seq[i]);
+        paires[abs(2*s.seq[i])] = 2*i+1;
     };
+    print_tab(paires, 2*n+1);
+    int* signes = malloc(n*sizeof(int*));
     for(int i=0; i<n;i++){
         adj[i] = malloc(4*sizeof(int));
+        signes[i] = signe(2*s.seq[i]);
     };
-    //Ajout des voisins issus du nombre impair
-    adj[0][0] = paires[2*n]/2;
-    adj[paires[2*n]/2][2] = 0;
+    //La case 0 correspond au numéro impair
+    //La case 1 au numéro pair
+    //La case 2 à la continuation de l'impair
+    //la case 3 à la continuation du pair 
+    adj[0][0] = paires[2*n]/2; //Correspond au numero 2*n
+    adj[0][1] = (paires[1]/2-1);
+    adj[paires[2*n]/2][3] = 0; //Correspond à la continuation du pair 2*n final
     for(int i=1; i<n;i++){
-        adj[i][0] = paires[2*i]/2;
-        adj[paires[2*i]/2][2] = i;
+        adj[i][0] = paires[2*i]/2; //Correspond à l'impair entrant
+        adj[i][1] = (paires[2*i+1]/2-1); //Correspond au pair entrant
     };
     for(int i=0; i<n;i++){
-        adj[i][1] = paires[2*i+2]/2;
-        adj[paires[2*i+2]/2][3] = i;
+        adj[i][3] = ((paires[2*i+1]+1)%12)/2; //Correspond à la continuation du pair
+        adj[i][2] = paires[2*i+2]/2; //Correspond à la continuation de l'impair
     };
     graphe res = {
         .n = n,
-        .adj = adj
+        .adj = adj,
+        .signes = signes,
+        .DFI = NULL,
+        .type = NULL 
     };
+    free(paires);
+    //printf("fini conversion\n");
     return res;
 };
 
-//Le DFS:   donne un index DFI a chaque sommet
-//          trie les aretes en aretes retour/aretes de parcours
-void DFS(graphe g, graphe_comb newg, bool* vus, int s, int* index){
+//Initialise un graphe issu d'une seq DT en un graphe de BM
+//L'initialisation de m et des arêtes est laissé au DFS
+graphe_comb init_graphe_comb(graphe g){
+    sommet* sommets = malloc(g.n*sizeof(sommet));
+    sommet_racine* R = malloc(g.n*sizeof(sommet_racine));
+    demi_arete* A = malloc(4*g.n*sizeof(demi_arete));
+    pile* P = init_pile();
+    int m = 0;
+    for(int i=0; i<g.n; i++){
+        lien_adjacence adj = {.lieu = dansS, .index = -1};
+        sommet s = {
+            .adj = &adj, 
+            .parentDFS = -1,
+            .DFI = -1,
+            .petit_ancetre = -1,
+            .point_min = -1,
+            .visite = 0,
+            .flag_arete_retour = 0,
+            .racines_pertinentes = NULL,
+            .enfantsDFS_separes = NULL,
+            .p_parentDFS = NULL
+        };
+        sommets[i] = s;
+    }
+    graphe_comb newg = {.n = g.n,
+                        .m = 0,
+                        .S = sommets,
+                        .R = R,
+                        .A = A,
+                        P = P};
+    return newg;
+}
+
+void DFS(graphe g, graphe* newg, bool* vus, int s, int* index){
+    /*Le DFS:   donne un index DFI a chaque sommet
+                trie les aretes en aretes retour/aretes de parcours
+                simplifie les aretes doubles
+    */
     vus[s] = true;
-    newg.S[s].DFI = (*index)++; 
-    for(int i = 0; i<4; i++){
-        if(!vus[g.adj[s][i]]){
-            newg.S[g.adj[s][i]].parentDFS = s;
-            DFS(g,newg,vus,g.adj[s][i], index);
+    newg->DFI[(*index)++] = s;
+    //compte le nombre de voisins effectifs
+    int nb_vois = 1;
+    for(int i = 1; i<4; i++){
+        if(g.adj[s][i] != g.adj[s][i-1]) nb_vois++;
+    }
+    newg->degre[s] = nb_vois;
+    //cree les voisins effectifs
+    int* vois = malloc(nb_vois*sizeof(int));
+    int* types = malloc(nb_vois*sizeof(int));
+    vois[0] = g.adj[s][0];
+    types[0] = 1;
+    int cpt = 1;
+    for(int i = 1; i<4; i++){
+        if(g.adj[s][i] != g.adj[s][i-1]){
+            vois[cpt++] = g.adj[s][i];
+            types[cpt] = 1;
+        } else {
+            types[cpt] = 2; //c'est une double arête
         }
     }
+    newg->adj[s] = vois;
+    newg->type[s] = types;
+    for(int i = 1; i<nb_vois; i++){
+        if(!vus[newg->adj[s][i]]){
+            DFS(g,newg,vus,g.adj[s][i], index);
+        } else {
+            if(newg->DFI[newg->adj[s][i]] < newg->DFI[s]-1) newg->type[s][i] *= -1; //c'est une arete retour
+        }
+    }
+}
+
+graphe preprocess_graphe(graphe g){
+    /* Prend un graphe g ayant été extrait d'une sequence DT, et utilise un DFS pour:
+    - donner un ordre DFS aux sommets
+    - simplifier les aretes doubles
+    - trier les aretes de parcours ou de retour*/
+    graphe *pnewg = malloc(sizeof(graphe));
+    pnewg->n = g.n;
+    pnewg->adj = malloc(g.n*sizeof(int*));
+    pnewg->DFI = malloc(g.n*sizeof(int));
+    pnewg->signes = malloc(g.n*sizeof(int));
+    pnewg->degre = malloc(g.n*sizeof(int));
+    pnewg->type = malloc(g.n*sizeof(int*));
+    bool* vus = malloc(g.n*sizeof(bool));
+    for(int i = 0; i<g.n; i++){
+        vus[i] = false;
+        pnewg->signes[i] = g.signes[i];
+    }
+    int index = 0;
+    DFS(g, pnewg, vus, 0, &index);
+    free(vus);
+    return *pnewg;
+}
+
+void preprocess(graphe g, graphe_comb gtilde){
+    /*Modifie gtilde précédemment initialisé: (g est le graphe simplifié déjà parcouru)
+        - calcule les petit_ancetre des sommets
+        - calcule les points_min des sommets
+        - truc truc externally active?*/
+    
+    //Calcul de l'ancêtre direct de plus petit indice
+    for(int i = 0; i<g.n; i++){ //Indice DFI
+        int s = g.DFI[i];
+        gtilde.S[s].petit_ancetre = i;
+        for(int v = 0; v<g.degre[s]; v++){
+            if( g.type[s][v] < 0 && g.DFI[g.adj[s][v]] < gtilde.S[s].petit_ancetre){
+                gtilde.S[s].petit_ancetre = g.DFI[g.adj[s][v]];
+            }
+        }
+    }
+    //Calcul du point_min
+    for(int i = g.n-1; i>=0; i--){
+        int s = g.DFI[i];
+        gtilde.S[s].point_min = gtilde.S[s].petit_ancetre;
+        for(int v = 0; v<g.degre[s]; v++){
+            if( g.type[s][v] > 0 && gtilde.S[g.adj[s][v]].point_min < gtilde.S[s].point_min){
+                gtilde.S[s].point_min = gtilde.S[g.adj[s][v]].point_min;
+            }
+        }
+    }
+    //Reste à faire des DFSseparatedChildList et DFS parent
+}
+
+//Fonctions de test
+void test_conversion(){
+    int seq[6] = {3, (-6), 1, 4, (-2), (-5)};
+    seq_dt noeud_wiki = {.taille = 6, .seq = seq};
+    graphe gnoeud_wiki = conversion_seqDT(noeud_wiki);
+    print_seq_dt(&noeud_wiki);
+    print_graphe(gnoeud_wiki);
+    return;
+}
+
+int main(){
+    printf("\nok!\n");
+    return 0;
 }
