@@ -18,7 +18,7 @@ typedef struct plongement plongement;
 
 struct face {
     int n_sommets;
-    int *sommets;
+    voisin *sommets;
 };
 
 typedef struct face face;
@@ -42,21 +42,17 @@ faces_arr calculer_faces(plongement p){
     
     face *f = malloc(sizeof(face) * n * 4); // le nombre de faces est au plus de 4n car le graphe est 4-régulier
     int i_face = 0;
-    int *proc_sommet = malloc(sizeof(int) * n);
-    for (int i = 0; i < n; i++){
-        proc_sommet[i] = -1;
-    }
+    voisin *proc_sommet = malloc(sizeof(voisin) * n);
 
     for (int sd = 0; sd < n; sd++){ // sd = sommet de départ
         for (int i = 0; i < 4; i++){ // i = indice du sommet suivant
             // printf("working on sd=%d, i=%d\n", sd, i);
-            // invariant de boule : proc_sommet est entierement composé de -1
             if (vus[sd][i]) continue;
             int taille_f = 1;
             vus[sd][i] = true;
             int s1 = sd;
             int s2 = p.adj[s1][i].sommet;
-            proc_sommet[s1] = s2;
+            proc_sommet[s1] = p.adj[s1][i];
             int last_j = i;
             
             while (s2 != sd){
@@ -68,7 +64,7 @@ faces_arr calculer_faces(plongement p){
                 }
                 j = (j+1)%4;
                 int s3 = p.adj[s2][j].sommet;
-                proc_sommet[s2] = s3;
+                proc_sommet[s2] = p.adj[s2][j];
                 vus[s2][j] = true;
                 s1 = s2;
                 s2 = s3;
@@ -78,12 +74,9 @@ faces_arr calculer_faces(plongement p){
 
             f[i_face].n_sommets = taille_f;
             f[i_face].sommets = malloc(sizeof(int) * taille_f);
-            f[i_face].sommets[0] = sd;
+            f[i_face].sommets[0] = proc_sommet[sd];
             for (int fi = 1; fi < taille_f; fi++){
-                f[i_face].sommets[fi] = proc_sommet[f[i_face].sommets[fi-1]];
-            }
-            for (int fi = 0; fi < taille_f; fi++){
-                proc_sommet[f[i_face].sommets[fi]] = -1;
+                f[i_face].sommets[fi] = proc_sommet[f[i_face].sommets[fi-1].sommet];
             }
 
             i_face++;
@@ -96,12 +89,12 @@ faces_arr calculer_faces(plongement p){
 
 void afficher_face(face f){
     for (int i = 0; i < f.n_sommets; i++){
-        printf("%d ", f.sommets[i]);
+        printf("%d ", f.sommets[i].sommet);
     }
     printf("\n");
 }
 
-int main(){
+int test_calculer_faces(){
     int n = 6;
     voisin **adj = malloc(sizeof(voisin*) * n);
     for (int i = 0; i < n; i++){
@@ -178,6 +171,32 @@ int main(){
     }
     free(adj);
 }
+
+
+struct graphe_tait {
+    int n;
+    face *sommets;
+    int **adj;
+    int *deg;
+};
+
+typedef struct graphe_tait graphe_tait;
+
+// int nb_sommets_commun(face f1, face f2){
+//     int c = 0;
+//     for (int i = 0; i < f1.n_sommets; i++){
+//         for (int j = 0; j < f2.n_sommets; j++){
+//             if (f1.sommets[i] == f2.sommets[j]) c++;
+//         }
+//     }
+//     return c;
+// }
+
+graphe_tait calculer_graphe_tait(plongement p){
+    faces_arr fa = calculer_faces(p);
+     
+}
+
 
 /*
 pour calculer le graphe de Tait :
