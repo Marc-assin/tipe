@@ -117,7 +117,7 @@ struct sommet{
 typedef struct sommet sommet;
 
 struct sommet_racine{
-    lien_adjacence* adj; //tableau de taille 2
+    lien_adjacence* lien; //tableau de taille 2
     int parent; //indice dans S
 };
 
@@ -281,7 +281,7 @@ void DFS(graphe g, graphe* newg, bool* vus, int s, int* index){
     }
 }
 
-graphe preprocess_graphe(graphe g){
+graphe precalcul_graphe(graphe g){
     /* Prend un graphe g ayant été extrait d'une sequence DT, et utilise un DFS pour:
     - donner un ordre DFS aux sommets
     - simplifier les aretes doubles
@@ -304,7 +304,7 @@ graphe preprocess_graphe(graphe g){
     return *pnewg;
 }
 
-void preprocess(graphe g, graphe_comb gtilde){
+void precalcul(graphe g, graphe_comb *gtilde){
     /*Modifie gtilde précédemment initialisé: (g est le graphe simplifié déjà parcouru)
         - calcule les petit_ancetre des sommets
         - calcule les points_min des sommets
@@ -313,20 +313,21 @@ void preprocess(graphe g, graphe_comb gtilde){
     //Calcul de l'ancêtre direct de plus petit indice
     for(int i = 0; i<g.n; i++){ //Indice DFI
         int s = g.DFI[i];
-        gtilde.S[s].petit_ancetre = i;
+        gtilde->S[s].DFI = i;
+        gtilde->S[s].petit_ancetre = i;
         for(int v = 0; v<g.degre[s]; v++){
-            if( g.type[s][v] < 0 && g.DFI[g.adj[s][v]] < gtilde.S[s].petit_ancetre){
-                gtilde.S[s].petit_ancetre = g.DFI[g.adj[s][v]];
+            if( g.type[s][v] < 0 && g.DFI[g.adj[s][v]] < gtilde->S[s].petit_ancetre){
+                gtilde->S[s].petit_ancetre = g.DFI[g.adj[s][v]];
             }
         }
     }
     //Calcul du point_min
     for(int i = g.n-1; i>=0; i--){
         int s = g.DFI[i];
-        gtilde.S[s].point_min = gtilde.S[s].petit_ancetre;
+        gtilde->S[s].point_min = gtilde->S[s].petit_ancetre;
         for(int v = 0; v<g.degre[s]; v++){
-            if( g.type[s][v] > 0 && gtilde.S[g.adj[s][v]].point_min < gtilde.S[s].point_min){
-                gtilde.S[s].point_min = gtilde.S[g.adj[s][v]].point_min;
+            if( g.type[s][v] > 0 && gtilde->S[g.adj[s][v]].point_min < gtilde->S[s].point_min){
+                gtilde->S[s].point_min = gtilde->S[g.adj[s][v]].point_min;
             }
         }
     }
@@ -339,7 +340,7 @@ void preprocess(graphe g, graphe_comb gtilde){
         }
         for(int v = 0; v<g.degre[s]; v++){
             for(int t = v; t<g.degre[s]; t++){
-                if(gtilde.S[g.adj[s][t]].point_min > gtilde.S[g.adj[s][v]].point_min) {
+                if(gtilde->S[g.adj[s][t]].point_min > gtilde->S[g.adj[s][v]].point_min) {
                     int temp = voisins_tries[v];
                     voisins_tries[v] = voisins_tries[t];
                     voisins_tries[t] = temp;
@@ -350,21 +351,36 @@ void preprocess(graphe g, graphe_comb gtilde){
         double_liste* lst = NULL;
         for(int v = 0; v<g.degre[s]; v++){
             lst = insertion(lst, voisins_tries[v]);
-            gtilde.S[voisins_tries[v]].p_parentDFS = lst;
+            gtilde->S[voisins_tries[v]].p_parentDFS = lst;
         }
-        gtilde.S[s].enfantsDFS = lst;
+        gtilde->S[s].enfantsDFS = lst;
     }
 }
 
 graphe_comb BoyerMyrvold(seq_dt seq){
     /*Prend une séquence DT et renvoie le graphe combinatoire après exécution de l'algo de Boyer Myrvold*/
+        //Precalcul
     //Transformation en un graphe
     graphe g = conversion_seqDT(seq);
     //Simplification du graphe
-    graphe g_simple = preprocess_graphe(g);
+    graphe g_simple = precalcul_graphe(g);
     //Initialisation du graphe combinatoire
     graphe_comb gtilde = init_graphe_comb(g_simple);
-    preprocess(g_simple, gtilde);
+    precalcul(g_simple, &gtilde);
+        //Boucle principale
+    for(int i = g.n-1; i>=0; i--){ //On traite les sommets par ordre DFI descendant
+        int v = g.DFI[i];
+        double_liste* debut = gtilde.S[v].enfantsDFS;
+        double_liste* suivant = debut;
+        while(suivant != NULL && suivant->suiv != debut){
+            //On crée un sommet virtuel
+            lien_adjacence lien_arete = {.lieu = dansA, .index = -1};
+            lien_adjacence lien_enfant = {.lieu = dansS, .index = -1};
+            lien_adjacence lien[2] = {lien_arete, lien_enfant};
+            sommet_racine vc = {.lien = lien, .parent = v};
+        }
+    }
+
 
     return gtilde;
 }
