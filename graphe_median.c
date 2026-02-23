@@ -2,6 +2,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+/*
+pour calculer le graphe de Tait :
+    on calcule l'ensemble des faces
+    a partir d'une face qcq, on fait un bfs, où les voisins de la face f sont les faces qui ne partagent pas d'arête avec f.
+    l'ensemble des faces parcourues est l'ensemble des sommets du graphe de Tait, et les arêtes sont entre les faces qui partagent un sommet.
+*/
+
 struct voisin {
     int id_arete;
     int sommet;
@@ -247,7 +254,15 @@ graphe_tait calculer_graphe_tait(plongement p){
         }
         gt.adj[i] = malloc(sizeof(face) * gt.deg[i]);
         for (int j = 0; j < gt.deg[i]; j++){
-            gt.adj[i][j] = temp_voisins[j];
+            for (int k = 0; k < gt.deg[i]; k++){
+                int s = gt.sommets[i].sommets[j].sommet;
+                for (int l = 0; l < gt.sommets[temp_voisins[k]].n_sommets; l++){
+                    if (gt.sommets[temp_voisins[k]].sommets[l].sommet == s){ 
+                        // seulement un seul des voisins de f lui partage le sommet s. De cette manière, les voisins sont dans le meme ordre que les sommets autour de f, ce qui fait que gt est un plongement combinatoire
+                        gt.adj[i][j] = temp_voisins[k];
+                    }
+                }
+            }
         }
     }
     
@@ -332,6 +347,10 @@ int main(){
 
     for (int i = 0; i < gt.n; i++){
         afficher_face(gt.sommets[i]);
+        for (int j = 0; j < gt.deg[i]; j++){
+            printf(" %d", gt.adj[i][j]);
+        }
+        printf("\n");
     }
 
     
@@ -351,8 +370,10 @@ int main(){
 }
 
 /*
-pour calculer le graphe de Tait :
-    on calcule l'ensemble des faces
-    a partir d'une face qcq, on fait un bfs, où les voisins de la face f sont les faces qui ne partagent pas d'arête avec f.
-    l'ensemble des faces parcourues est l'ensemble des sommets du graphe de Tait, et les arêtes sont entre les faces qui partagent un sommet.
+il faut ensuite trianguler le graphe de Tait T en un graphe G, puis calculer son graphe des angles réduit H' de la manière suivante : 
+    on calcule un plongement combinatoire de T (ce que l'on peut faire sans algorithme compliqué, étant donné sa construction, car on a conservé l'ordre des sommets autout de chaque face, ce qui donne l'ordre des voisins de chaque face)
+    on rajoute un sommet sur chaque face de T, que l'on relie à chaque sommet de T, en préservant le plongement (ce qui donne G)
+    on calcule le dual de G
+    on choisit une face quelconque pour etre la face exterieure
 */
+
