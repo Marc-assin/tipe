@@ -110,8 +110,8 @@ struct sommet{
     int visite;
     int flag_arete_retour;
     intlist* racines_pertinentes;
-    intlist* enfantsDFS_separes;
-    intlist* p_parentDFS;
+    intlist* enfantsDFS;
+    intlist* p_parentDFS; //Pointe vers la cellule de enfantsDFS de son parent
 };
 
 typedef struct sommet sommet;
@@ -229,7 +229,7 @@ graphe_comb init_graphe_comb(graphe g){
             .visite = 0,
             .flag_arete_retour = 0,
             .racines_pertinentes = NULL,
-            .enfantsDFS_separes = NULL,
+            .enfantsDFS = NULL,
             .p_parentDFS = NULL
         };
         sommets[i] = s;
@@ -330,7 +330,43 @@ void preprocess(graphe g, graphe_comb gtilde){
             }
         }
     }
-    //Reste à faire des DFSseparatedChildList et DFS parent
+    //Creation des enfantsDFS
+    for(int s = 0; s<g.n; s++){
+        //on trie les enfants par ordre croissant
+        int* voisins_tries = malloc(g.degre[s]*sizeof(int));
+        for(int v = 0; v<g.degre[s]; v++){
+            voisins_tries[v] = g.adj[s][v];
+        }
+        for(int v = 0; v<g.degre[s]; v++){
+            for(int t = v; t<g.degre[s]; t++){
+                if(gtilde.S[g.adj[s][t]].point_min > gtilde.S[g.adj[s][v]].point_min) {
+                    int temp = voisins_tries[v];
+                    voisins_tries[v] = voisins_tries[t];
+                    voisins_tries[t] = temp;
+                }
+            }
+        }
+        //on insère dans la liste doublement chaînée par ordre décroissant, elle est donc croissante
+        double_liste* lst = NULL;
+        for(int v = 0; v<g.degre[s]; v++){
+            lst = insertion(lst, voisins_tries[v]);
+            gtilde.S[voisins_tries[v]].p_parentDFS = lst;
+        }
+        gtilde.S[s].enfantsDFS = lst;
+    }
+}
+
+graphe_comb BoyerMyrvold(seq_dt seq){
+    /*Prend une séquence DT et renvoie le graphe combinatoire après exécution de l'algo de Boyer Myrvold*/
+    //Transformation en un graphe
+    graphe g = conversion_seqDT(seq);
+    //Simplification du graphe
+    graphe g_simple = preprocess_graphe(g);
+    //Initialisation du graphe combinatoire
+    graphe_comb gtilde = init_graphe_comb(g_simple);
+    preprocess(g_simple, gtilde);
+
+    return gtilde;
 }
 
 //Fonctions de test
