@@ -45,3 +45,6 @@ graph* dt_vers_graph(seq_dt* s){
     }
 }
 
+int main(){
+    return 0;
+}
