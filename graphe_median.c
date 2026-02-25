@@ -18,7 +18,8 @@ typedef struct voisin voisin;
 
 struct plongement {
     int n;
-    voisin **adj; //dans la cas i : les 4 voisins du sommet i, dans leur ordre combinatoire
+    voisin **adj; //dans la case i : les voisins du sommet i, dans leur ordre combinatoire
+    int *deg; //dans la case i : les voisins du sommet i, dans leur ordre combinatoire
 };
 
 typedef struct plongement plongement;
@@ -41,8 +42,8 @@ faces_arr calculer_faces(plongement p){
     int n = p.n;
     bool **vus = malloc(sizeof(bool*) * n);
     for (int i = 0; i < n; i++){
-        vus[i] = malloc(sizeof(bool) * 4);
-        for (int j = 0; j < 4; j++){
+        vus[i] = malloc(sizeof(bool) * p.deg[i]);
+        for (int j = 0; j < p.deg[i]; j++){
             vus[i][j] = false;
         }
     }
@@ -52,7 +53,7 @@ faces_arr calculer_faces(plongement p){
     voisin *proc_sommet = malloc(sizeof(voisin) * n);
 
     for (int sd = 0; sd < n; sd++){ // sd = sommet de départ
-        for (int i = 0; i < 4; i++){ // i = indice du sommet suivant
+        for (int i = 0; i < p.deg[sd]; i++){ // i = indice du sommet suivant
             // printf("working on sd=%d, i=%d\n", sd, i);
             if (vus[sd][i]) continue;
             int taille_f = 1;
@@ -67,9 +68,9 @@ faces_arr calculer_faces(plongement p){
                 int j = 0;
                 while (p.adj[s2][j].id_arete != p.adj[s1][last_j].id_arete){
                     // printf("j=%d, p.adj[s2][j].id_arete=%d, p.adj[s1][i].id_arete=%d, s1=%d, s2=%d\n", j, p.adj[s2][j].id_arete, p.adj[s1][i].id_arete, s1, s2);
-                    j = (j+1)%4;
+                    j = (j+1)%p.deg[s2];
                 }
-                j = (j+1)%4;
+                j = (j+1)%p.deg[s2];
                 int s3 = p.adj[s2][j].sommet;
                 proc_sommet[s2] = p.adj[s2][j];
                 vus[s2][j] = true;
@@ -107,69 +108,75 @@ void afficher_face(face f){
     printf("\n");
 }
 
-int test_calculer_faces(){
+void test_calculer_faces(){
     int n = 6;
     voisin **adj = malloc(sizeof(voisin*) * n);
+    int *deg = malloc(sizeof(int*) * n);
     for (int i = 0; i < n; i++){
         adj[i] = malloc(sizeof(voisin) * 4);
     }
-    {
-        adj[0][0].id_arete = 3;
-        adj[0][0].sommet = 5;
-        adj[0][1].id_arete = 2;
-        adj[0][1].sommet = 2;
-        adj[0][2].id_arete = 4;
-        adj[0][2].sommet = 3;
-        adj[0][3].id_arete = 5;
-        adj[0][3].sommet = 4;
-        
-        adj[1][0].id_arete = 11;
-        adj[1][0].sommet = 2;
-        adj[1][1].id_arete = 1;
-        adj[1][1].sommet = 2;
-        adj[1][2].id_arete = 0;
-        adj[1][2].sommet = 5;
-        adj[1][3].id_arete = 10;
-        adj[1][3].sommet = 5;
-        
-        adj[2][0].id_arete = 1;
-        adj[2][0].sommet = 1;
-        adj[2][1].id_arete = 11;
-        adj[2][1].sommet = 1;
-        adj[2][2].id_arete = 7;
-        adj[2][2].sommet = 3;
-        adj[2][3].id_arete = 2;
-        adj[2][3].sommet = 0;
-        
-        adj[3][0].id_arete = 7;
-        adj[3][0].sommet = 2;
-        adj[3][1].id_arete = 8;
-        adj[3][1].sommet = 4;
-        adj[3][2].id_arete = 6;
-        adj[3][2].sommet = 4;
-        adj[3][3].id_arete = 4;
-        adj[3][3].sommet = 0;
-        
-        adj[4][0].id_arete = 5;
-        adj[4][0].sommet = 0;
-        adj[4][1].id_arete = 6;
-        adj[4][1].sommet = 3;
-        adj[4][2].id_arete = 8;
-        adj[4][2].sommet = 3;
-        adj[4][3].id_arete = 9;
-        adj[4][3].sommet = 5;
-        
-        adj[5][0].id_arete = 0;
-        adj[5][0].sommet = 1;
-        adj[5][1].id_arete = 3;
-        adj[5][1].sommet = 0;
-        adj[5][2].id_arete = 9;
-        adj[5][2].sommet = 4;
-        adj[5][3].id_arete = 10;
-        adj[5][3].sommet = 1;
-    }
+    
+    adj[0][0].id_arete = 3;
+    adj[0][0].sommet = 5;
+    adj[0][1].id_arete = 2;
+    adj[0][1].sommet = 2;
+    adj[0][2].id_arete = 4;
+    adj[0][2].sommet = 3;
+    adj[0][3].id_arete = 5;
+    adj[0][3].sommet = 4;
+    deg[0] = 4;
+    
+    adj[1][0].id_arete = 11;
+    adj[1][0].sommet = 2;
+    adj[1][1].id_arete = 1;
+    adj[1][1].sommet = 2;
+    adj[1][2].id_arete = 0;
+    adj[1][2].sommet = 5;
+    adj[1][3].id_arete = 10;
+    adj[1][3].sommet = 5;
+    deg[1] = 4;
+    
+    adj[2][0].id_arete = 1;
+    adj[2][0].sommet = 1;
+    adj[2][1].id_arete = 11;
+    adj[2][1].sommet = 1;
+    adj[2][2].id_arete = 7;
+    adj[2][2].sommet = 3;
+    adj[2][3].id_arete = 2;
+    adj[2][3].sommet = 0;
+    deg[2] = 4;
+    
+    adj[3][0].id_arete = 7;
+    adj[3][0].sommet = 2;
+    adj[3][1].id_arete = 8;
+    adj[3][1].sommet = 4;
+    adj[3][2].id_arete = 6;
+    adj[3][2].sommet = 4;
+    adj[3][3].id_arete = 4;
+    adj[3][3].sommet = 0;
+    deg[3] = 4;
+    
+    adj[4][0].id_arete = 5;
+    adj[4][0].sommet = 0;
+    adj[4][1].id_arete = 6;
+    adj[4][1].sommet = 3;
+    adj[4][2].id_arete = 8;
+    adj[4][2].sommet = 3;
+    adj[4][3].id_arete = 9;
+    adj[4][3].sommet = 5;
+    deg[4] = 4;
+    
+    adj[5][0].id_arete = 0;
+    adj[5][0].sommet = 1;
+    adj[5][1].id_arete = 3;
+    adj[5][1].sommet = 0;
+    adj[5][2].id_arete = 9;
+    adj[5][2].sommet = 4;
+    adj[5][3].id_arete = 10;
+    adj[5][3].sommet = 1;
+    deg[5] = 4;
 
-    plongement p = {n, adj};
+    plongement p = {n, adj, deg};
 
     faces_arr fa = calculer_faces(p);
 
@@ -185,7 +192,7 @@ int test_calculer_faces(){
         free(adj[i]);
     }
     free(adj);
-    return 0;
+    free(deg);
 }
 
 
@@ -279,69 +286,76 @@ graphe_tait calculer_graphe_tait(plongement p){
     return gt;
 }
 
-int main(){
+void test_calculer_graphe_tait(){
     int n = 6;
     voisin **adj = malloc(sizeof(voisin*) * n);
+    int *deg = malloc(sizeof(int*) * n);
     for (int i = 0; i < n; i++){
         adj[i] = malloc(sizeof(voisin) * 4);
     }
-    {
-        adj[0][0].id_arete = 3;
-        adj[0][0].sommet = 5;
-        adj[0][1].id_arete = 2;
-        adj[0][1].sommet = 2;
-        adj[0][2].id_arete = 4;
-        adj[0][2].sommet = 3;
-        adj[0][3].id_arete = 5;
-        adj[0][3].sommet = 4;
-        
-        adj[1][0].id_arete = 11;
-        adj[1][0].sommet = 2;
-        adj[1][1].id_arete = 1;
-        adj[1][1].sommet = 2;
-        adj[1][2].id_arete = 0;
-        adj[1][2].sommet = 5;
-        adj[1][3].id_arete = 10;
-        adj[1][3].sommet = 5;
-        
-        adj[2][0].id_arete = 1;
-        adj[2][0].sommet = 1;
-        adj[2][1].id_arete = 11;
-        adj[2][1].sommet = 1;
-        adj[2][2].id_arete = 7;
-        adj[2][2].sommet = 3;
-        adj[2][3].id_arete = 2;
-        adj[2][3].sommet = 0;
-        
-        adj[3][0].id_arete = 7;
-        adj[3][0].sommet = 2;
-        adj[3][1].id_arete = 8;
-        adj[3][1].sommet = 4;
-        adj[3][2].id_arete = 6;
-        adj[3][2].sommet = 4;
-        adj[3][3].id_arete = 4;
-        adj[3][3].sommet = 0;
-        
-        adj[4][0].id_arete = 5;
-        adj[4][0].sommet = 0;
-        adj[4][1].id_arete = 6;
-        adj[4][1].sommet = 3;
-        adj[4][2].id_arete = 8;
-        adj[4][2].sommet = 3;
-        adj[4][3].id_arete = 9;
-        adj[4][3].sommet = 5;
-        
-        adj[5][0].id_arete = 0;
-        adj[5][0].sommet = 1;
-        adj[5][1].id_arete = 3;
-        adj[5][1].sommet = 0;
-        adj[5][2].id_arete = 9;
-        adj[5][2].sommet = 4;
-        adj[5][3].id_arete = 10;
-        adj[5][3].sommet = 1;
-    }
+    
+    adj[0][0].id_arete = 3;
+    adj[0][0].sommet = 5;
+    adj[0][1].id_arete = 2;
+    adj[0][1].sommet = 2;
+    adj[0][2].id_arete = 4;
+    adj[0][2].sommet = 3;
+    adj[0][3].id_arete = 5;
+    adj[0][3].sommet = 4;
+    deg[0] = 4;
+    
+    adj[1][0].id_arete = 11;
+    adj[1][0].sommet = 2;
+    adj[1][1].id_arete = 1;
+    adj[1][1].sommet = 2;
+    adj[1][2].id_arete = 0;
+    adj[1][2].sommet = 5;
+    adj[1][3].id_arete = 10;
+    adj[1][3].sommet = 5;
+    deg[1] = 4;
+    
+    adj[2][0].id_arete = 1;
+    adj[2][0].sommet = 1;
+    adj[2][1].id_arete = 11;
+    adj[2][1].sommet = 1;
+    adj[2][2].id_arete = 7;
+    adj[2][2].sommet = 3;
+    adj[2][3].id_arete = 2;
+    adj[2][3].sommet = 0;
+    deg[2] = 4;
+    
+    adj[3][0].id_arete = 7;
+    adj[3][0].sommet = 2;
+    adj[3][1].id_arete = 8;
+    adj[3][1].sommet = 4;
+    adj[3][2].id_arete = 6;
+    adj[3][2].sommet = 4;
+    adj[3][3].id_arete = 4;
+    adj[3][3].sommet = 0;
+    deg[3] = 4;
+    
+    adj[4][0].id_arete = 5;
+    adj[4][0].sommet = 0;
+    adj[4][1].id_arete = 6;
+    adj[4][1].sommet = 3;
+    adj[4][2].id_arete = 8;
+    adj[4][2].sommet = 3;
+    adj[4][3].id_arete = 9;
+    adj[4][3].sommet = 5;
+    deg[4] = 4;
+    
+    adj[5][0].id_arete = 0;
+    adj[5][0].sommet = 1;
+    adj[5][1].id_arete = 3;
+    adj[5][1].sommet = 0;
+    adj[5][2].id_arete = 9;
+    adj[5][2].sommet = 4;
+    adj[5][3].id_arete = 10;
+    adj[5][3].sommet = 1;
+    deg[5] = 4;
 
-    plongement p = {n, adj};
+
+    plongement p = {n, adj, deg};
 
     graphe_tait gt = calculer_graphe_tait(p);
 
@@ -367,6 +381,129 @@ int main(){
         free(adj[i]);
     }
     free(adj);
+}
+
+#include "int_vector.c"
+
+struct graphe {
+    int n;
+    int_vector **adj;
+};
+
+typedef struct graphe graphe;
+
+graphe trianguler_faces(plongement p){
+    faces_arr faces = calculer_faces(p);
+    // int c = p.n;
+    // for (int i = 0; i < faces.n; i++){
+    //     if (faces.faces[i].n_sommets > 3){
+    //         c++;
+    //     }
+    // }
+    graphe g;
+    g.n = p.n+faces.n;
+    g.adj = malloc(sizeof(int_vector) * g.n);
+    for (int i = 0; i < p.n; i++){
+        g.adj[i] = init_ivec(p.deg[i]*2);
+        for (int j = 0; j < p.deg[i]; j++){ // chaque demie arête est dans une et une seule face
+            bool done = false;
+            for (int f = 0; f < faces.n; f++){
+                for (int s = 0; s < faces.faces[f].n_sommets; s++){
+                    if (faces.faces[f].sommets[s].id_arete == p.adj[i][j].id_arete &&
+                        faces.faces[f].sommets[s].sommet == p.adj[i][j].sommet){
+                        append_ivec(g.adj[i], f+p.n);
+                        done = true;
+                        break;
+                    }
+                }
+                if (done) break;
+            }
+            append_ivec(g.adj[i], p.adj[i][j].sommet);
+        }
+    }
+    for (int i = 0; i < g.n-p.n; i++){
+        g.adj[i+p.n] = init_ivec(faces.faces[i].n_sommets);
+        for (int j = 0; j < faces.faces[i].n_sommets; j++){
+            append_ivec(g.adj[i+p.n], faces.faces[i].sommets[j].sommet);
+        }
+    }
+    for (int i = 0; i < faces.n; i++) {
+        free(faces.faces[i].sommets);
+    }
+    free(faces.faces);
+    return g;
+}
+
+// void main(){
+void test_trianguler_graphe(){
+    int n = 6;
+    voisin **adj = malloc(sizeof(voisin*)*n);
+    for (int i = 0; i < n; i++){
+        adj[i] = malloc(sizeof(voisin) * 4);
+    }
+    int *deg = malloc(sizeof(int)*n);
+    
+    adj[0][0].id_arete = 0;
+    adj[0][0].sommet = 1;
+    adj[0][1].id_arete = 3;
+    adj[0][1].sommet = 3;
+    adj[0][2].id_arete = 6;
+    adj[0][2].sommet = 5;
+    deg[0] = 3;
+    
+    adj[1][0].id_arete = 0;
+    adj[1][0].sommet = 0;
+    adj[1][1].id_arete = 7;
+    adj[1][1].sommet = 5;
+    adj[1][2].id_arete = 1;
+    adj[1][2].sommet = 2;
+    deg[1] = 3;
+    
+    adj[2][0].id_arete = 2;
+    adj[2][0].sommet = 3;
+    adj[2][1].id_arete = 1;
+    adj[2][1].sommet = 1;
+    deg[2] = 2;
+    
+    adj[3][0].id_arete = 2;
+    adj[3][0].sommet = 2;
+    adj[3][1].id_arete = 4;
+    adj[3][1].sommet = 4;
+    adj[3][2].id_arete = 3;
+    adj[3][2].sommet = 0;
+    deg[3] = 3;
+    
+    adj[4][0].id_arete = 4;
+    adj[4][0].sommet = 3;
+    adj[4][1].id_arete = 5;
+    adj[4][1].sommet = 5;
+    deg[4] = 2;
+    
+    adj[5][0].id_arete = 7;
+    adj[5][0].sommet = 1;
+    adj[5][1].id_arete = 6;
+    adj[5][1].sommet = 0;
+    adj[5][2].id_arete = 5;
+    adj[5][2].sommet = 4;
+    deg[5] = 3;
+    
+    plongement p = {n, adj, deg};
+
+    graphe g = trianguler_faces(p);
+    for (int i = 0; i < g.n; i++){
+        printf("%d:\n\t", i);
+        print_ivec(g.adj[i]);
+    }
+    
+    for (int i = 0; i < g.n; i++){
+        free_ivec(g.adj[i]);
+    }
+    free(g.adj);
+    for (int i = 0; i < n; i++){
+        free(adj[i]);
+    }
+    free(adj);
+    free(deg);
 }
 
 /*
