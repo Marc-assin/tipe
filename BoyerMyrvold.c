@@ -46,7 +46,7 @@ struct double_liste{
 
 typedef struct double_liste double_liste;
 
-double_liste* insertion(double_liste* lst, int x){ //insere avant la cellule selectionnee
+double_liste* preinsertion(double_liste* lst, int x){ //insère en tête de liste
     double_liste* cellule = malloc(sizeof(double_liste));
     cellule->val = x;
     if(lst != NULL){
@@ -60,6 +60,22 @@ double_liste* insertion(double_liste* lst, int x){ //insere avant la cellule sel
         cellule->prec = cellule;
     }
     return cellule;
+};
+
+double_liste* postinsertion(double_liste* lst, int x){ //insere en queue de liste
+    double_liste* cellule = malloc(sizeof(double_liste));
+    cellule->val = x;
+    if(lst != NULL){
+        cellule->prec = lst;
+        cellule->suiv = lst->suiv;
+        lst->suiv = cellule;
+        lst->suiv->prec = cellule;
+        
+    } else {
+        cellule->suiv = cellule;
+        cellule->prec = cellule;
+    }
+    return lst;
 };
 
 double_liste* suppression(double_liste* lst){
@@ -102,15 +118,15 @@ struct lien_adjacence{
 typedef struct lien_adjacence lien_adjacence;
 
 struct sommet{
-    lien_adjacence* adj; //tableau de taille 2
+    lien_adjacence* adj; //tableau de taille 2: relie aux demi arêtes de la face extérieure
     int parentDFS;
     int DFI;
     int petit_ancetre;
     int point_min;
-    int visite;
-    int flag_arete_retour;
-    intlist* racines_pertinentes;
-    intlist* enfantsDFS;
+    int visite; //Utilisé dans la Montée
+    int flag_arete_retour; //Utilisé dans la Montée
+    intlist* racines_pertinentes; 
+    intlist* enfantsDFS; 
     intlist* p_parentDFS; //Pointe vers la cellule de enfantsDFS de son parent
 };
 
@@ -123,11 +139,11 @@ struct sommet_racine{
 
 typedef struct sommet_racine sommet_racine;
 
-struct demi_arete{ //NOMS A ECHANGER
-    lien_adjacence* adj; //tableau de taille 2: indique l'ordre circulaire
+struct demi_arete{
+    lien_adjacence* adj; //tableau de taille 2
     int voisin; //vers quoi l'arête pointe
-    int signe; // 1 ou -1 selon si on est un tree edge ou back edge
-    int type; //Double: 0; au-dessus: 1; en-dessous: -1
+    int type; // 1 ou -1 selon du sens de rotation?
+    int signe; //Double: 0; au-dessus: 1; en-dessous: -1
 };
 
 typedef struct demi_arete demi_arete;
@@ -136,7 +152,7 @@ struct graphe_comb{
     int n; //nombre de sommets
     int m; //nombre d'arêtes
     sommet* S;
-    sommet_racine* R;
+    sommet_racine* R; //sommets racines correspondants aux enfants!
     demi_arete* A;
     pile* P;
 };
@@ -215,19 +231,19 @@ graphe conversion_seqDT(seq_dt s){
 graphe_comb init_graphe_comb(graphe g){
     sommet* sommets = malloc(g.n*sizeof(sommet));
     sommet_racine* R = malloc(g.n*sizeof(sommet_racine));
-    demi_arete* A = malloc(4*g.n*sizeof(demi_arete));
+    demi_arete* A = malloc(8*g.n*sizeof(demi_arete));
     pile* P = init_pile();
     int m = 0;
     for(int i=0; i<g.n; i++){
-        lien_adjacence adj = {.lieu = dansS, .index = -1};
+        lien_adjacence* adj = malloc(2*sizeof(lien_adjacence));
         sommet s = {
-            .adj = &adj, 
+            .adj = adj, 
             .parentDFS = -1,
             .DFI = -1,
             .petit_ancetre = -1,
             .point_min = -1,
             .visite = 0,
-            .flag_arete_retour = 0,
+            .flag_arete_retour = -1,
             .racines_pertinentes = NULL,
             .enfantsDFS = NULL,
             .p_parentDFS = NULL
@@ -350,10 +366,60 @@ void precalcul(graphe g, graphe_comb *gtilde){
         //on insère dans la liste doublement chaînée par ordre décroissant, elle est donc croissante
         double_liste* lst = NULL;
         for(int v = 0; v<g.degre[s]; v++){
-            lst = insertion(lst, voisins_tries[v]);
+            lst = preinsertion(lst, voisins_tries[v]);
             gtilde->S[voisins_tries[v]].p_parentDFS = lst;
         }
         gtilde->S[s].enfantsDFS = lst;
+    }
+}
+
+void successeur_face_ext(graphe_comb gtilde, demi_arete* w, int* entree_w){
+   demi_arete e = gtilde.A[w->voisin];
+   int x = e.adj[0].index;
+   if(gtilde.S[x].adj[0].index != gtilde.S[x].adj[1].index){ //Si le sommet n'est pas d'arité 1
+        if(gtilde.S[x].adj[0].index = e.adj[1].index) *entree_w = 1; //Si la demi arete 0 est celle d'où on vient
+        else *entree_w = 0;
+   }
+   *w = e;
+   return;
+}
+
+void montee(graphe_comb* gtilde, int w, int v){
+    /* Identifie le sous-graphe pertinent pour l'arête retour (v,w)
+        On parcourt le chemin dans l'arbre de v à w en identifiant les sommets coupants, ie les sommets racines
+        Le parcours se fait de demi arête en demi arête*/
+
+    gtilde->S[w].flag_arete_retour = v; //On marque w comme pertinent
+    demi_arete x = gtilde->A[gtilde->S[w].adj[0].index] , y = gtilde->A[gtilde->S[w].adj[1].index];
+    int entree_x = 0, entree_y = 1; //L'un part à gauche, l'autre à droite
+
+    while(x.adj[0].index != v && y.adj[0].index != v && gtilde->S[x.adj[0].index].visite != v 
+            && gtilde->S[y.adj[0].index].visite != v){ //Tant qu'on n'est pas arrivé à v, et qu'on n'est pas déjà passé par là
+        if(x.adj[0].lieu == dansS) gtilde->S[x.adj[0].index].visite = v; //On a visité
+        if(y.adj[0].lieu == dansS) gtilde->S[y.adj[0].index].visite = v; //On a visité
+        demi_arete z = {.adj = NULL};
+        if(x.adj[0].lieu == dansR){
+            z = x;
+        } else if (y.adj[0].lieu == dansR){ 
+            z = y;
+        }
+        if(z.adj = NULL){ //On a trouvé le sommet racine de notre composante biconnexe actuelle, on cherche donc à continuer notre remontée
+            //On retrouve le parent lié à notre sommet racine
+            int c = x.adj[0].index;
+            int p = gtilde->S[c].parentDFS;
+            if(p != v){
+                if(gtilde->S[c].point_min < gtilde->S[v].DFI) preinsertion(gtilde->S[p].racines_pertinentes, c);
+                else postinsertion(gtilde->S[p].racines_pertinentes, c);
+            }
+            x = gtilde->A[gtilde->S[p].adj[0].index];
+            y = gtilde->A[gtilde->S[p].adj[1].index];
+            entree_x = 0;
+            entree_y = 1;
+
+        } else { //On continue
+            successeur_face_ext(*gtilde, &x, &entree_x);
+            successeur_face_ext(*gtilde, &y, &entree_y);
+        }
     }
 }
 
@@ -370,15 +436,53 @@ graphe_comb BoyerMyrvold(seq_dt seq){
         //Boucle principale
     for(int i = g.n-1; i>=0; i--){ //On traite les sommets par ordre DFI descendant
         int v = g.DFI[i];
+        
+        //Pour chaque enfant de v
         double_liste* debut = gtilde.S[v].enfantsDFS;
         double_liste* suivant = debut;
         while(suivant != NULL && suivant->suiv != debut){
+            int c = suivant->val;
             //On crée un sommet virtuel
-            lien_adjacence lien_arete = {.lieu = dansA, .index = -1};
-            lien_adjacence lien_enfant = {.lieu = dansS, .index = -1};
-            lien_adjacence lien[2] = {lien_arete, lien_enfant};
+            lien_adjacence lien_precedent = {.lieu = dansA, .index = gtilde.m}; //Indique la demi arete precendente
+            lien_adjacence lien_suivant = {.lieu = dansA, .index = gtilde.m}; //Indique la demi arete suivante
+            lien_adjacence lien[2] = {lien_precedent, lien_suivant};
             sommet_racine vc = {.lien = lien, .parent = v};
+            gtilde.R[c] = vc;
+            //On ajoute l'arête de parcours (vc, c) comme 2 demi-arêtes
+            gtilde.A[gtilde.m].adj[1].lieu = dansR;
+            gtilde.A[gtilde.m].adj[1].index = c; //relie a vc
+            gtilde.A[gtilde.m].adj[1].lieu = dansA; //indique l'indice dans A
+            gtilde.A[gtilde.m].adj[1].index = gtilde.m; 
+            gtilde.A[gtilde.m].voisin = gtilde.m+1; 
+            gtilde.A[gtilde.m].type = 1; //initialisé à 1
+            //gtilde.A[gtilde.m].signe = A FAIRE: pour se rappeler du type des aretes
+            gtilde.A[gtilde.m+1].adj[0].lieu = dansS;
+            gtilde.A[gtilde.m+1].adj[0].index = c; //relie à c
+            gtilde.A[gtilde.m+1].adj[1].lieu = dansA; //indique l'indice dans A
+            gtilde.A[gtilde.m+1].adj[1].index = gtilde.m+1; 
+            gtilde.A[gtilde.m+1].voisin = gtilde.m; 
+            gtilde.A[gtilde.m+1].type = 1; //initialisé à 1
+            //gtilde.A[gtilde.m+1].signe = A FAIRE: pour se rappeler du type des aretes
+
+            //On marque la nouvelle demi-arete comme incidente à c
+            gtilde.S[c].adj[0].index = gtilde.m+1;
+            gtilde.S[c].adj[0].lieu = dansA;
+            gtilde.S[c].adj[1].index = gtilde.m+1;
+            gtilde.S[c].adj[1].lieu = dansA;
+
+            //On vient d'ajouter une arête: on incrémente le compteur
+            gtilde.m++; gtilde.m++;
+
         }
+
+        //Pour chaque arete retour entre v et un de ses descendants w
+        for(int j = 0; j<g_simple.degre[v]; j++){
+            if(g_simple.type[v][j] < 0 && gtilde.S[g_simple.adj[v][j]].DFI > gtilde.S[v].DFI){ //Si arete retour et descendant
+                int w = g_simple.adj[v][j];
+                montee(&gtilde, w, v); 
+            }
+        }
+
     }
 
 
@@ -394,6 +498,9 @@ void test_conversion(){
     print_graphe(gnoeud_wiki);
     return;
 }
+
+/*A tester: conversion en graphe combinatoire et ordre DFI
+            procédure walkup*/
 
 int main(){
     printf("\nok!\n");
