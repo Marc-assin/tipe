@@ -423,7 +423,7 @@ graphe trianguler_faces(plongement p){
     }
     for (int i = 0; i < g.n-p.n; i++){
         g.adj[i+p.n] = init_ivec(faces.faces[i].n_sommets);
-        for (int j = 0; j < faces.faces[i].n_sommets; j++){
+        for (int j = faces.faces[i].n_sommets - 1; j >= 0; j--){
             append_ivec(g.adj[i+p.n], faces.faces[i].sommets[j].sommet);
         }
     }
@@ -434,7 +434,145 @@ graphe trianguler_faces(plongement p){
     return g;
 }
 
-// void main(){
+plongement graphe_vers_plongement(graphe g){
+    int n = g.n;
+    plongement p;
+    int **indice_arete;
+    indice_arete = malloc(sizeof(int*) * n);
+    for (int i = 0; i < n; i++){
+        indice_arete[i] = malloc(sizeof(int) * n);
+        for (int j = 0; j < n; j++){
+            indice_arete[i][j] = -1;
+        }
+    }
+    int compteur_indice_aretes = 0;
+    p.n = n;
+    p.deg = malloc(sizeof(int) * n);
+    p.adj = malloc(sizeof(voisin*) * n);
+    for (int i = 0; i < n; i++){
+        p.deg[i] = g.adj[i]->taille;
+        p.adj[i] = malloc(sizeof(voisin*) * p.deg[i]);
+        for (int j = 0; j < p.deg[i]; j++){
+            voisin v;
+            v.sommet = get_ivec(g.adj[i], j);
+            if (indice_arete[i][v.sommet] == -1){
+                indice_arete[i][v.sommet] = compteur_indice_aretes;
+                indice_arete[v.sommet][i] = compteur_indice_aretes;
+                compteur_indice_aretes++;
+            }
+            v.id_arete = indice_arete[i][v.sommet];
+            p.adj[i][j] = v;
+        }
+    }
+    for (int i = 0; i < n; i++){
+        free(indice_arete[i]);
+        free_ivec(g.adj[i]);
+    }
+    free(indice_arete);
+    free(g.adj);
+    return p;
+}
+
+void afficher_plongement(plongement p){
+    printf("Plongement (n = %d)\n", p.n);
+    for (int i = 0; i < p.n; i++){
+        printf("%d : ", i);
+        for (int j = 0; j < p.deg[i]; j++){
+            printf("[%d, %d] ",
+                   p.adj[i][j].sommet,
+                   p.adj[i][j].id_arete);
+        }
+        printf("\n");
+    }
+}
+
+void afficher_graphe_tait(graphe_tait gt){
+    printf("Graphe de Tait (n = %d)\n", gt.n);
+
+    for (int i = 0; i < gt.n; i++){
+        printf("Sommet %d : face = ", i);
+
+        // afficher la face correspondante
+        for (int j = 0; j < gt.sommets[i].n_sommets; j++){
+            printf("%d ", gt.sommets[i].sommets[j].sommet);
+        }
+
+        printf("\n    deg = %d, voisins : ", gt.deg[i]);
+
+        for (int j = 0; j < gt.deg[i]; j++){
+            printf("%d ", gt.adj[i][j]);
+        }
+
+        printf("\n");
+    }
+}
+
+void afficher_graphe(graphe g){
+    printf("Graphe (n = %d)\n", g.n);
+    for (int i = 0; i < g.n; i++){
+        printf("%d : ", i);
+        for (int j = 0; j < g.adj[i]->taille; j++){
+            printf("%d ", get_ivec(g.adj[i], j));
+        }
+        printf("\n");
+    }
+}
+
+void free_plongement(plongement p){
+    for (int i = 0; i < p.n; i++){
+        free(p.adj[i]);   // tableau de voisin
+    }
+    free(p.adj);
+    free(p.deg);
+}
+
+void free_graphe_tait(graphe_tait gt){
+    for (int i = 0; i < gt.n; i++){
+        free(gt.sommets[i].sommets);
+    }
+    free(gt.sommets);
+
+    for (int i = 0; i < gt.n; i++){
+        free(gt.adj[i]);
+    }
+    free(gt.adj);
+    free(gt.deg);
+}
+
+void free_graphe(graphe g){
+    for (int i = 0; i < g.n; i++){
+        free_ivec(g.adj[i]);
+    }
+    free(g.adj);
+}
+
+void afficher_faces_arr(faces_arr fa){
+    printf("Faces_arr (n = %d)\n", fa.n);
+
+    for (int i = 0; i < fa.n; i++){
+        printf("Face %d (taille = %d) : ",
+               i,
+               fa.faces[i].n_sommets);
+
+        for (int j = 0; j < fa.faces[i].n_sommets; j++){
+            printf("%d ", fa.faces[i].sommets[j].sommet);
+        }
+
+        printf("\n");
+    }
+}
+
+void free_faces_arr(faces_arr fa){
+    if (fa.faces == NULL) return;
+
+    for (int i = 0; i < fa.n; i++){
+        free(fa.faces[i].sommets);
+    }
+
+    free(fa.faces);
+}
+
+// int main(){
 void test_trianguler_graphe(){
     int n = 6;
     voisin **adj = malloc(sizeof(voisin*)*n);
@@ -490,20 +628,16 @@ void test_trianguler_graphe(){
     plongement p = {n, adj, deg};
 
     graphe g = trianguler_faces(p);
-    for (int i = 0; i < g.n; i++){
-        printf("%d:\n\t", i);
-        print_ivec(g.adj[i]);
-    }
-    
-    for (int i = 0; i < g.n; i++){
-        free_ivec(g.adj[i]);
-    }
-    free(g.adj);
-    for (int i = 0; i < n; i++){
-        free(adj[i]);
-    }
-    free(adj);
-    free(deg);
+    plongement p2 = graphe_vers_plongement(g);
+
+    // afficher_plongement(p2);
+
+    faces_arr fa = calculer_faces(p2);
+
+    afficher_faces_arr(fa);
+    free_faces_arr(fa);
+    free_plongement(p);
+    free_plongement(p2);
 }
 
 /*
