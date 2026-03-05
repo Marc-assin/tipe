@@ -394,12 +394,6 @@ typedef struct graphe graphe;
 
 graphe trianguler_faces(plongement p){
     faces_arr faces = calculer_faces(p);
-    // int c = p.n;
-    // for (int i = 0; i < faces.n; i++){
-    //     if (faces.faces[i].n_sommets > 3){
-    //         c++;
-    //     }
-    // }
     graphe g;
     g.n = p.n+faces.n;
     g.adj = malloc(sizeof(int_vector) * g.n);
@@ -466,10 +460,55 @@ plongement graphe_vers_plongement(graphe g){
     }
     for (int i = 0; i < n; i++){
         free(indice_arete[i]);
-        free_ivec(g.adj[i]);
     }
     free(indice_arete);
-    free(g.adj);
+    return p;
+}
+
+plongement gt_vers_plongement(graphe_tait gt){
+    plongement p;
+    int n = gt.n;
+
+    p.n = n;
+    p.deg = malloc(sizeof(int) * n);
+    p.adj = malloc(sizeof(voisin*) * n);
+
+    int **indice_arete = malloc(sizeof(int*) * n);
+    for (int i = 0; i < n; i++){
+        indice_arete[i] = malloc(sizeof(int) * n);
+        for (int j = 0; j < n; j++){
+            indice_arete[i][j] = -1;
+        }
+    }
+
+    int compteur_aretes = 0;
+
+    for (int i = 0; i < n; i++){
+        p.deg[i] = gt.deg[i];
+        p.adj[i] = malloc(sizeof(voisin) * p.deg[i]);
+
+        for (int j = 0; j < p.deg[i]; j++){
+            int v = gt.adj[i][j];
+
+            voisin w;
+            w.sommet = v;
+
+            if (indice_arete[i][v] == -1){
+                indice_arete[i][v] = compteur_aretes;
+                indice_arete[v][i] = compteur_aretes;
+                compteur_aretes++;
+            }
+
+            w.id_arete = indice_arete[i][v];
+            p.adj[i][j] = w;
+        }
+    }
+
+    for (int i = 0; i < n; i++){
+        free(indice_arete[i]);
+    }
+    free(indice_arete);
+
     return p;
 }
 
@@ -638,6 +677,244 @@ void test_trianguler_graphe(){
     free_faces_arr(fa);
     free_plongement(p);
     free_plongement(p2);
+}
+
+struct graphe_angles_reduit {
+    graphe H;
+    int *cycle_exterieur;
+};
+
+typedef struct graphe_angles_reduit graphe_angles_reduit;
+
+graphe_angles_reduit calculer_graphe_angles_reduit(plongement p){
+    faces_arr faces = calculer_faces(p);
+    graphe g;
+    g.n = p.n+faces.n-1;
+    g.adj = malloc(sizeof(int_vector) * g.n);
+    for (int i = 0; i < p.n; i++){
+        g.adj[i] = init_ivec(p.deg[i]);
+        for (int j = 0; j < p.deg[i]; j++){ // chaque demie arête est dans une et une seule face
+            bool done = false;
+            for (int f = 0; f < faces.n; f++){
+                for (int s = 0; s < faces.faces[f].n_sommets; s++){
+                    if (faces.faces[f].sommets[s].id_arete == p.adj[i][j].id_arete &&
+                        faces.faces[f].sommets[s].sommet == p.adj[i][j].sommet){
+                        if (f+p.n < g.n) { // la face exterieure est la dernière de faces, il ne faut pas l'ajouter
+                            append_ivec(g.adj[i], f+p.n);
+                        }
+                        done = true;
+                        break;
+                    }
+                }
+                if (done) break;
+            }
+            // append_ivec(g.adj[i], p.adj[i][j].sommet); // on n'ajoute pas les arêtes originales de p
+        }
+    }
+    for (int i = 0; i < g.n-p.n; i++){
+        g.adj[i+p.n] = init_ivec(faces.faces[i].n_sommets);
+        for (int j = faces.faces[i].n_sommets - 1; j >= 0; j--){
+            append_ivec(g.adj[i+p.n], faces.faces[i].sommets[j].sommet);
+        }
+    }
+    graphe_angles_reduit gar = {g, malloc(sizeof(int) * faces.faces[faces.n - 1].n_sommets)};
+    for (int i = 0; i < faces.faces[faces.n - 1].n_sommets; i++){
+        gar.cycle_exterieur[i] = faces.faces[faces.n - 1].sommets[i].sommet;
+    }
+    for (int i = 0; i < faces.n; i++) {
+        free(faces.faces[i].sommets);
+    }
+    free(faces.faces);
+    return gar;
+}
+
+struct arete {
+    int x, y;
+};
+
+typedef struct arete arete;
+
+struct arete_arr {
+    int n;
+    arete *aretes;
+};
+
+typedef struct arete_arr arete_arr;
+
+arete_arr calculer_aretes(graphe g){
+    int n_aretes = 0;
+    for (int i = 0; i < g.n; i++){
+        for (int j = 0; j < g.adj[i]->taille; j++){
+            if (i < get_ivec(g.adj[i], j)) n_aretes += g.adj[i]->taille;
+        }
+    }
+    arete_arr aretes = {n_aretes, malloc(sizeof(arete) * n_aretes)};
+    int i_arete = 0;
+    for (int i = 0; i < g.n; i++){
+        for (int j = 0; j < g.adj[i]->taille; j++){
+            if (i < get_ivec(g.adj[i], j)) {
+                aretes.aretes[i_arete].x = i;
+                aretes.aretes[i_arete].y = get_ivec(g.adj[i], j);
+                i_arete++;
+            }
+        }
+    }
+    return aretes;
+}
+
+#include <math.h>
+#define PI 3.14159265358979323846
+
+double phi_prime(int s, double *x, graphe H){
+    double sum = 0.0;
+    for (int i = 0; i < H.adj[s]->taille; i++){
+        sum += atan(exp(x[s]-x[i])) - atan(exp(x[i]-x[s])) - PI / 2.0;
+    }
+    sum += PI * 2.0;
+    return sum;
+}
+
+double* calculer_radii(graphe_angles_reduit gar, double coeff_apprentissage, double epsilon){
+    graphe H = gar.H;
+    int n = H.n;
+    int s1 = gar.cycle_exterieur[0], s2 = gar.cycle_exterieur[1], s3 = gar.cycle_exterieur[2];
+    double *x = malloc(sizeof(double) * n);
+    double *dphidx = malloc(sizeof(double) * n);
+    for (int i = 0; i < n; i++){
+        x[i] = 0.0;
+    }
+    x[s1] = tan(exp(PI/3));
+    x[s2] = tan(exp(PI/3));
+    x[s3] = tan(exp(PI/3));
+    for (int i = 0; i < n; i++){
+        if (i != s1 && i != s2 && i != s3) {
+            dphidx[i] = phi_prime(i, x, H);
+        } else {
+            dphidx[i] = 0;
+        }
+    }
+    double MSE = 0.0;
+    for (int i = 0; i < n; i++){
+        MSE += dphidx[i]*dphidx[i];
+    }
+    
+    while (MSE > epsilon){
+        // printf("%e\n", MSE); 
+        for (int i = 0; i < n; i++){
+            if (i != s1 && i != s2 && i != s3) {
+                x[i] -= coeff_apprentissage * dphidx[i];
+            }
+        }
+        for (int i = 0; i < n; i++){
+            if (i != s1 && i != s2 && i != s3) {
+                dphidx[i] = phi_prime(i, x, H);
+            } else {
+                dphidx[i] = 0;
+            }
+        }
+        MSE = 0.0;
+        for (int i = 0; i < n; i++){
+            MSE += dphidx[i]*dphidx[i];
+        }
+    }
+    double *r = malloc(sizeof(double) * n);
+    for (int i = 0; i < n; i++){
+        r[i] = exp(x[i]);
+    }
+    free(x);
+    free(dphidx);
+    return r;
+}
+
+int main(){
+    int n = 6;
+    voisin **adj = malloc(sizeof(voisin*) * n);
+    int *deg = malloc(sizeof(int*) * n);
+    for (int i = 0; i < n; i++){
+        adj[i] = malloc(sizeof(voisin) * 4);
+    }
+    
+    adj[0][0].id_arete = 3;
+    adj[0][0].sommet = 5;
+    adj[0][1].id_arete = 2;
+    adj[0][1].sommet = 2;
+    adj[0][2].id_arete = 4;
+    adj[0][2].sommet = 3;
+    adj[0][3].id_arete = 5;
+    adj[0][3].sommet = 4;
+    deg[0] = 4;
+    
+    adj[1][0].id_arete = 11;
+    adj[1][0].sommet = 2;
+    adj[1][1].id_arete = 1;
+    adj[1][1].sommet = 2;
+    adj[1][2].id_arete = 0;
+    adj[1][2].sommet = 5;
+    adj[1][3].id_arete = 10;
+    adj[1][3].sommet = 5;
+    deg[1] = 4;
+    
+    adj[2][0].id_arete = 1;
+    adj[2][0].sommet = 1;
+    adj[2][1].id_arete = 11;
+    adj[2][1].sommet = 1;
+    adj[2][2].id_arete = 7;
+    adj[2][2].sommet = 3;
+    adj[2][3].id_arete = 2;
+    adj[2][3].sommet = 0;
+    deg[2] = 4;
+    
+    adj[3][0].id_arete = 7;
+    adj[3][0].sommet = 2;
+    adj[3][1].id_arete = 8;
+    adj[3][1].sommet = 4;
+    adj[3][2].id_arete = 6;
+    adj[3][2].sommet = 4;
+    adj[3][3].id_arete = 4;
+    adj[3][3].sommet = 0;
+    deg[3] = 4;
+    
+    adj[4][0].id_arete = 5;
+    adj[4][0].sommet = 0;
+    adj[4][1].id_arete = 6;
+    adj[4][1].sommet = 3;
+    adj[4][2].id_arete = 8;
+    adj[4][2].sommet = 3;
+    adj[4][3].id_arete = 9;
+    adj[4][3].sommet = 5;
+    deg[4] = 4;
+    
+    adj[5][0].id_arete = 0;
+    adj[5][0].sommet = 1;
+    adj[5][1].id_arete = 3;
+    adj[5][1].sommet = 0;
+    adj[5][2].id_arete = 9;
+    adj[5][2].sommet = 4;
+    adj[5][3].id_arete = 10;
+    adj[5][3].sommet = 1;
+    deg[5] = 4;
+
+    plongement p = {n, adj, deg};
+
+    graphe_tait gt = calculer_graphe_tait(p);
+    plongement plongement_gt = gt_vers_plongement(gt);
+    graphe gt_triangule = trianguler_faces(plongement_gt);
+    plongement plongement_gt_triangule = graphe_vers_plongement(gt_triangule);
+    graphe_angles_reduit gar = calculer_graphe_angles_reduit(plongement_gt_triangule);
+    double *r = calculer_radii(gar, 0.001, 1e-20);
+
+    for (int i = 0; i < gar.H.n; i++){
+        printf("%lf ", r[i]);
+    }
+
+    free_plongement(p);
+    free_graphe_tait(gt);
+    free_plongement(plongement_gt);
+    free_graphe(gt_triangule);
+    free_plongement(plongement_gt_triangule);
+    free_graphe(gar.H);
+    free(gar.cycle_exterieur);
+    free(r);
 }
 
 /*
