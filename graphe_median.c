@@ -1039,7 +1039,7 @@ vec* calculer_positions(double *r, graphe_angles_reduit gar){
     while (pointeur_gauche < pointeur_droite){
         int s = file[pointeur_gauche];
         printf("en train de regarder %d, %e, %e, %e\n", s, positions[s].x, positions[s].y, r[s]);
-        ecrire_point_python(f, positions[s].x, positions[s].y, "b", s);
+        // ecrire_point_python(f, positions[s].x, positions[s].y, "b", s);
         ecrire_cercle_python(f, positions[s].x, positions[s].y, r[s]);
         int j = 0; 
         int deg = gar.H.adj[s]->taille;
@@ -1182,7 +1182,7 @@ vec* calculer_positions(double *r, graphe_angles_reduit gar){
         }
     }
 
-    ecrire_footing_python(f);
+    // ecrire_footing_python(f);
 
     fclose(f);
     free(file);
@@ -1190,8 +1190,8 @@ vec* calculer_positions(double *r, graphe_angles_reduit gar){
     return positions;
 }
 
-int main(){
-// void test_calculer_positions(){
+// int main(){
+void test_calculer_positions(){
     int n = 6;
     voisin **adj = malloc(sizeof(voisin*) * n);
     int *deg = malloc(sizeof(int) * n);
@@ -1301,4 +1301,189 @@ il faut ensuite trianguler le graphe de Tait T en un graphe G, puis calculer son
     on calcule le dual de G
     on choisit une face quelconque pour etre la face exterieure
 */
+
+double angle(vec A, vec B, vec C) {
+    vec BA, BC;
+
+    // Vecteurs BA = A - B et BC = C - B
+    BA.x = A.x - B.x;
+    BA.y = A.y - B.y;
+
+    BC.x = C.x - B.x;
+    BC.y = C.y - B.y;
+
+    // Produit scalaire
+    double dot = BA.x * BC.x + BA.y * BC.y;
+
+    // Produit vectoriel 2D (scalaire)
+    double cross = BA.x * BC.y - BA.y * BC.x;
+
+    // Angle entre -pi et pi
+    double angle = atan2(cross, dot);
+
+    // Conversion vers [0, 2pi)
+    if (angle < 0) {
+        angle += 2.0 * PI;
+    }
+
+    return angle;
+}
+
+void calculer_svg(vec *pos, double *r, graphe_tait gt, char* filename){
+    int n = 0;
+    for (int i = 0; i < gt.n; i++){
+        for (int j = 0; j < gt.deg[i]; j++){
+            if (i < gt.adj[i][j]) n++;
+        }
+    }
+    vec *pos_intersections = malloc(sizeof(vec) * n);
+    bool *inited = malloc(sizeof(bool) * n);
+    for (int i = 0; i < n; i++){
+        inited[i] = false;
+    } 
+
+    FILE *f_python = fopen("fleche.py", "a");
+    for (int i = 0; i < gt.n; i++){
+        for (int j = 0; j < gt.deg[i]; j++){
+            int inter_idx = gt.sommets[i].sommets[j].sommet;
+            if (!inited[inter_idx]) {
+                inited[inter_idx] = true;
+                pos_intersections[inter_idx].x = (pos[i].x * r[gt.adj[i][j]] + pos[gt.adj[i][j]].x * r[i]) / (r[i] + r[gt.adj[i][j]]);
+                pos_intersections[inter_idx].y = (pos[i].y * r[gt.adj[i][j]] + pos[gt.adj[i][j]].y * r[i]) / (r[i] + r[gt.adj[i][j]]);
+                printf("je place %d avec %d et %d\n", inter_idx, i, gt.adj[i][j]);
+                ecrire_point_python(f_python, pos_intersections[inter_idx].x, pos_intersections[inter_idx].y, "b", inter_idx);
+            }    
+        }
+    }
+    ecrire_footing_python(f_python);
+    fclose(f_python);
+
+    // logiquement il devrait etre possible de faire un dfs, qui dessine tout le noeud (à méditer)
+    FILE *f = fopen(filename, "w");
+    fprintf(f, "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"400\" height=\"400\" viewBox=\"0 0 3 3\" stroke=\"blue\" stroke-width=\"0.008\" fill=\"none\">\n");
+    for (int i = 0; i < gt.n; i++){
+        for (int j = 0; j < gt.deg[i]; j++){
+            int i0 = gt.sommets[i].sommets[j].sommet;
+            int i1 = gt.sommets[i].sommets[(j+1)%gt.sommets[i].n_sommets].sommet;
+            double alpha = angle(pos_intersections[i0], pos[i], pos_intersections[i1]);
+            if (sin(PI/2 - alpha/2) == 0){
+                printf("<path d=\"M %lf %lf L %lf %lf\"/>\n", pos_intersections[i0].x, pos_intersections[i0].y, pos_intersections[i1].x, pos_intersections[i1].y);
+            } else {
+                double rayon_arc = r[i] * fabs(sin(alpha/2) / sin(PI/4 - alpha/2));
+                int large = 0;
+                if (alpha >= 3 * PI / 2) large = 1;
+                int sweep = 1;
+                if (alpha <= PI / 2) sweep = 0;
+                fprintf(f, "<path d=\"M %lf %lf A %lf %lf 0 %d %d %lf %lf\"/>\n", pos_intersections[i0].x, pos_intersections[i0].y, rayon_arc, rayon_arc, large, sweep, pos_intersections[i1].x, pos_intersections[i1].y);
+            }
+        }
+    }
+    fprintf(f, "</svg>\n");
+    fclose(f);
+}
+
+int main(){
+        int n = 6;
+    voisin **adj = malloc(sizeof(voisin*) * n);
+    int *deg = malloc(sizeof(int) * n);
+    for (int i = 0; i < n; i++){
+        adj[i] = malloc(sizeof(voisin) * 4);
+    }
+    
+    adj[0][0].id_arete = 3;
+    adj[0][0].sommet = 5;
+    adj[0][1].id_arete = 2;
+    adj[0][1].sommet = 2;
+    adj[0][2].id_arete = 4;
+    adj[0][2].sommet = 3;
+    adj[0][3].id_arete = 5;
+    adj[0][3].sommet = 4;
+    deg[0] = 4;
+    
+    adj[1][0].id_arete = 11;
+    adj[1][0].sommet = 2;
+    adj[1][1].id_arete = 1;
+    adj[1][1].sommet = 2;
+    adj[1][2].id_arete = 0;
+    adj[1][2].sommet = 5;
+    adj[1][3].id_arete = 10;
+    adj[1][3].sommet = 5;
+    deg[1] = 4;
+    
+    adj[2][0].id_arete = 1;
+    adj[2][0].sommet = 1;
+    adj[2][1].id_arete = 11;
+    adj[2][1].sommet = 1;
+    adj[2][2].id_arete = 7;
+    adj[2][2].sommet = 3;
+    adj[2][3].id_arete = 2;
+    adj[2][3].sommet = 0;
+    deg[2] = 4;
+    
+    adj[3][0].id_arete = 7;
+    adj[3][0].sommet = 2;
+    adj[3][1].id_arete = 8;
+    adj[3][1].sommet = 4;
+    adj[3][2].id_arete = 6;
+    adj[3][2].sommet = 4;
+    adj[3][3].id_arete = 4;
+    adj[3][3].sommet = 0;
+    deg[3] = 4;
+    
+    adj[4][0].id_arete = 5;
+    adj[4][0].sommet = 0;
+    adj[4][1].id_arete = 6;
+    adj[4][1].sommet = 3;
+    adj[4][2].id_arete = 8;
+    adj[4][2].sommet = 3;
+    adj[4][3].id_arete = 9;
+    adj[4][3].sommet = 5;
+    deg[4] = 4;
+    
+    adj[5][0].id_arete = 0;
+    adj[5][0].sommet = 1;
+    adj[5][1].id_arete = 3;
+    adj[5][1].sommet = 0;
+    adj[5][2].id_arete = 9;
+    adj[5][2].sommet = 4;
+    adj[5][3].id_arete = 10;
+    adj[5][3].sommet = 1;
+    deg[5] = 4;
+
+    plongement p = {n, adj, deg};
+
+    graphe_tait gt = calculer_graphe_tait(p);
+    afficher_graphe_tait(gt);
+    plongement plongement_gt = gt_vers_plongement(gt);
+    afficher_plongement(plongement_gt);
+    graphe gt_triangule = trianguler_faces(plongement_gt);
+    afficher_graphe(gt_triangule);
+    plongement plongement_gt_triangule = graphe_vers_plongement(gt_triangule);
+    afficher_plongement(plongement_gt_triangule);
+    graphe_angles_reduit gar = calculer_graphe_angles_reduit(plongement_gt_triangule);
+    double *r = calculer_radii(gar, 0.001, 1e-23);
+    for (int i = 0; i < 3; i++){
+        printf("%d ", gar.cycle_exterieur[i]);
+    }
+    printf("\n");
+    afficher_graphe(gar.H);
+
+    vec *positions = calculer_positions(r, gar);
+
+    for (int i = 0; i < gar.H.n; i++){
+        printf("%e;%e\n", positions[i].x, positions[i].y);
+    }
+
+    calculer_svg(positions, r, gt, "62.svg");
+
+    free(positions);
+    free_plongement(p);
+    free_graphe_tait(gt);
+    free_plongement(plongement_gt);
+    free_graphe(gt_triangule);
+    free_plongement(plongement_gt_triangule);
+    free_graphe(gar.H);
+    free(gar.cycle_exterieur);
+    free(r);
+}
 
