@@ -95,9 +95,9 @@ double_liste* suppression(double_liste* lst){ //Supprime le 1er élément
 struct graphe{
     int n;
     int** adj; //tableau de tableaux de taille au plus 4 (4 si multigraphe, moins si graphe simplifié)
-    int** signes; //tableau indiquant si l'arête passe au-dessus (>0), en-dessous (<0), ou pour le sommet correspondant (graphe simplifié)
+    int** signes; //tableau indiquant si l'arête passe au-dessus (>0), en-dessous (<0)
     //données pour les graphes simplifiés:
-    int* degre; //degre de chaque sommet
+    int* signe_sommet; //signe de chaque sommet_arête
     int** type; //tableau indiquant si l'arête est une arete directe (>0) ou retour (<0)
     int* DFI; //tableau indiquant l'ordre du DFS
 };
@@ -210,8 +210,18 @@ void successeur_face_ext(graphe_comb gtilde, demi_arete* w, int* entree_w){
 void print_graphe_simple(graphe g){
     for(int i=0; i<g.n; i++){
         printf("%d: ", i);
-        for(int j = 0; j<g.degre[i]; j++){
-            printf(" (%d: type %d, signe: %d) ,", g.adj[i][j], g.type[i][j], g.signes[i][j]);
+        for(int j = 0; j<4; j++){
+            printf(" (%d: type %d) ,", g.adj[i][j], g.type[i][j]);
+        }
+        printf("\n");
+    }
+}
+
+void print_res_BM(graphe g){
+    for(int i=0; i<g.n; i++){
+        printf("%d: ", i);
+        for(int j = 0; j<4; j++){
+            printf(" %d ,", g.adj[i][j]);
         }
         printf("\n");
     }
@@ -437,16 +447,32 @@ graphe conversion_seqDT(seq_dt s){
 
 graphe simplifier_graphe(graphe g){
     /*Prend un graphe de noeud et ajoute un noeud pour chaque arête autour d'un noeud, reliés par des arêtes*/
-    int** adj = malloc(5*g.n*sizeof(int*));
-    int* signes = malloc(5*g.n*sizeof(int));
+    int** adj = malloc(5*(g.n)*sizeof(int*));
+    int* signes = malloc(5*(g.n)*sizeof(int));
+    int* DFI = malloc(5*(g.n)*sizeof(int));
+    int** types = malloc(5*(g.n)*sizeof(int*));
+    // printf("nb sommets: %d\n", g.n);
     for(int s = 0; s<g.n; s++){
+        // printf("Traitement sommet %d\n", s);
+        // fflush(stdout);
+        adj[5*s] = malloc(4*sizeof(int));
+        adj[5*s+1] = malloc(4*sizeof(int));
+        adj[5*s+2] = malloc(4*sizeof(int));
+        adj[5*s+3] = malloc(4*sizeof(int));
+        adj[5*s+4] = malloc(4*sizeof(int));
+        types[5*s] = malloc(4*sizeof(int));
+        types[5*s+1] = malloc(4*sizeof(int));
+        types[5*s+2] = malloc(4*sizeof(int));
+        types[5*s+3] = malloc(4*sizeof(int));
+        types[5*s+4] = malloc(4*sizeof(int));
+
         //voisins du sommet réel
-        adj[s][0] = 5*s+1;
-        adj[s][1] = 5*s+2;
-        adj[s][2] = 5*s+3;
-        adj[s][3] = 5*s+4;
+        adj[5*s][0] = 5*s+1;
+        adj[5*s][1] = 5*s+2;
+        adj[5*s][2] = 5*s+3;
+        adj[5*s][3] = 5*s+4;
         //voisins du sommet-arete 0
-        adj[5*s+1][0] = s;
+        adj[5*s+1][0] = 5*s;
         adj[5*s+1][1] = 5*s+2;
         for(int j=0; j<4; j++){
             if(g.adj[g.adj[s][0]][j] == s) adj[5*s+1][2] = 5*g.adj[s][0]+j+1;
@@ -454,7 +480,7 @@ graphe simplifier_graphe(graphe g){
         adj[5*s+1][3] = 5*s+4;
         signes[5*s+1] = g.signes[s][0];
         //voisins du sommet-arete 1
-        adj[5*s+2][0] = s;
+        adj[5*s+2][0] = 5*s;
         adj[5*s+2][1] = 5*s+3;
         for(int j=0; j<4; j++){
             if(g.adj[g.adj[s][1]][j] == s) adj[5*s+2][2] = 5*g.adj[s][1]+j+1;
@@ -462,7 +488,7 @@ graphe simplifier_graphe(graphe g){
         adj[5*s+2][3] = 5*s+1;
         signes[5*s+2] = g.signes[s][1];
         //voisins du sommet-arete 2
-        adj[5*s+3][0] = s;
+        adj[5*s+3][0] = 5*s;
         adj[5*s+3][1] = 5*s+4;
         for(int j=0; j<4; j++){
             if(g.adj[g.adj[s][2]][j] == s) adj[5*s+3][2] = 5*g.adj[s][2]+j+1;
@@ -470,7 +496,7 @@ graphe simplifier_graphe(graphe g){
         adj[5*s+3][3] = 5*s+2;
         signes[5*s+3] = g.signes[s][2];
         //voisins du sommet-arete 3
-        adj[5*s+4][0] = s;
+        adj[5*s+4][0] = 5*s;
         adj[5*s+4][1] = 5*s+1;
         for(int j=0; j<4; j++){
             if(g.adj[g.adj[s][3]][j] == s) adj[5*s+4][2] = 5*g.adj[s][3]+j+1;
@@ -478,12 +504,13 @@ graphe simplifier_graphe(graphe g){
         adj[5*s+4][3] = 5*s+3;
         signes[5*s+4] = g.signes[s][3];
     }
+
     graphe res = {
         .n = 5*g.n,
         .adj = adj,
-        .signes = signes,
-        .type = NULL,
-        .DFI = NULL,
+        .signe_sommet = signes,
+        .type = types,
+        .DFI = DFI,
     };
     return res;
 }
@@ -528,146 +555,138 @@ graphe_comb init_graphe_comb(graphe g){
     return newg;
 }
 
-void DFS(graphe g, graphe* newg, bool* vus, int s, int* index){
+void DFS(graphe* g, bool* vus, int s, int* index){
     /*Le DFS:   donne un index DFI a chaque sommet
                 trie les aretes en aretes retour/aretes de parcours
     */
+//    printf("traite sommet %d\n", s);
+//    fflush(stdout);
     vus[s] = true;
-    newg->DFI[(*index)++] = s;
-    //compte le nombre de voisins effectifs
-    int nb_vois = 0;
+    g->DFI[(*index)++] = s;
     for(int i = 0; i<4; i++){
-        if(g.adj[s][i] != g.adj[s][(i+1) % 4] && g.adj[s][i] != s) nb_vois++;
-    }
-    newg->degre[s] = nb_vois;
-    //cree les voisins effectifs
-    int* vois = malloc(nb_vois*sizeof(int));
-    int* types = malloc(nb_vois*sizeof(int));
-    int* signes = malloc(nb_vois*sizeof(int));
-    for(int i = 0; i<nb_vois; i++){
-        types[i] = -1;
-        signes[i] = 1;
-    }
-    int cpt = 0;
-    for(int i = 0; i<4; i++){
-        if(g.adj[s][i] != g.adj[s][(i+1)%4]){
-            if(g.adj[s][i] != s){
-                vois[cpt] = g.adj[s][i];
-                signes[cpt] *= g.signes[s][i];
-                cpt++;
-            }
-        } else {
-            signes[cpt] = 0; //c'est une double arête
-        }
-    }
-    newg->adj[s] = vois;
-    newg->type[s] = types;
-    newg->signes[s] = signes;
-
-    for(int i = 0; i<nb_vois; i++){
-        if(!vus[newg->adj[s][i]]){
-            newg->type[s][i] = 1;
-            DFS(g,newg,vus,newg->adj[s][i], index);
-        } else {
+        if(!vus[g->adj[s][i]]){
+            g->type[s][i] = 1;
+            DFS(g,vus,g->adj[s][i], index);
+        } else { 
             //on identifie l'arête correspondante et on match son type
-            for(int j = 0; j<newg->degre[newg->adj[s][i]]; j++){
-                if(newg->adj[newg->adj[s][i]][j] == s) newg->type[s][i] = newg->type[newg->adj[s][i]][j] ;
+            for(int j = 0; j<4; j++){
+                if(g->adj[g->adj[s][i]][j] == s) g->type[s][i] = g->type[g->adj[s][i]][j] ;
             } 
-
         }
     }
 }
 
-graphe precalcul_graphe(graphe g){
-    /* Prend un graphe g ayant été extrait d'une sequence DT, et utilise un DFS pour:
+void precalcul_graphe(graphe* g){
+    /* Prend un graphe g simplifié ayant été extrait d'une sequence DT, et utilise un DFS pour:
     - donner un ordre DFS aux sommets
-    - simplifier les aretes doubles
     - trier les aretes de parcours ou de retour*/
-    graphe *pnewg = malloc(sizeof(graphe));
-    pnewg->n = g.n;
-    pnewg->adj = malloc(g.n*sizeof(int*));
-    pnewg->DFI = malloc(g.n*sizeof(int));
-    pnewg->signes = malloc(g.n*sizeof(int*));
-    pnewg->degre = malloc(g.n*sizeof(int));
-    pnewg->type = malloc(g.n*sizeof(int*));
-    bool* vus = malloc(g.n*sizeof(bool));
-    for(int i = 0; i<g.n; i++){
+    bool* vus = malloc(g->n*sizeof(bool));
+    for(int i = 0; i<g->n; i++){
         vus[i] = false;
-        pnewg->signes[i] = g.signes[i];
     }
     int index = 0;
-    DFS(g, pnewg, vus, 0, &index);
+    DFS(g, vus, 0, &index);
     free(vus);
-    return *pnewg;
 }
 
-void precalcul(graphe g, graphe_comb *gtilde, int* signes){
+void tri_enfants_DFS(graphe_comb* gtilde, int s){
+    // printf("tri enfants de %d\n", s);
+    // fflush(stdout);
+    if(gtilde->S[s].enfantsDFS != NULL){
+        double_liste* depart = gtilde->S[s].enfantsDFS;
+        double_liste* pos = gtilde->S[s].enfantsDFS->suiv;
+        while(pos != gtilde->S[s].enfantsDFS){
+            if(gtilde->S[pos->val].point_min < gtilde->S[depart->val].point_min){
+                //echange de place
+                int tmp = depart->val;
+                depart->val = pos->val;
+                pos->val = tmp;
+                gtilde->S[depart->val].p_parentDFS = pos;
+                gtilde->S[pos->val].p_parentDFS = depart;
+            }
+            pos = pos->suiv;
+        }
+        depart = depart->suiv;
+        while(depart != gtilde->S[s].enfantsDFS){
+            pos = depart->suiv;
+            while(pos != gtilde->S[s].enfantsDFS){
+                if(gtilde->S[pos->val].point_min < gtilde->S[depart->val].point_min){
+                    //echange de place
+                    int tmp = depart->val;
+                    depart->val = pos->val;
+                    pos->val = tmp;
+                    gtilde->S[depart->val].p_parentDFS = pos;
+                    gtilde->S[pos->val].p_parentDFS = depart;
+                }
+                pos = pos->suiv;
+            }
+            depart = depart->suiv;
+        }
+    }
+}
+
+void precalcul(graphe g, graphe_comb *gtilde){
     /*Modifie gtilde précédemment initialisé: (g est le graphe simplifié déjà parcouru)
         - calcule le parent DFS de chaque sommet
         - calcule les petit_ancetre des sommets
-        - calcule les points_min des sommets*/
+        - calcule les points_min des sommets
+        - donne les enfants DFS des sommets*/
     print_tab(g.DFI, g.n);
-    //Calcul de l'indice DFI et attribution du signe
+    //Calcul de l'indice DFI
     for(int i = 0; i<g.n; i++){ 
         int s = g.DFI[i];
         gtilde->S[s].DFI = i;
-        //printf("Assigne %d a %d\n", i, s);
+        // printf("Assigne %d a %d\n", i, s);
+        // fflush(stdout);
         gtilde->S[s].petit_ancetre = i;
     }
+    // printf("Fini DFI\n");
+    // fflush(stdout);
     //Calcul de l'ancêtre direct de plus petit indice et DFI
     for(int i = 0; i<g.n; i++){
         int s = g.DFI[i];
-        for(int v = 0; v<g.degre[s]; v++){
+        for(int v = 0; v<4; v++){
             if( g.type[s][v] < 0 && gtilde->S[g.adj[s][v]].DFI < gtilde->S[s].petit_ancetre){ //Arete retour et DFI plus petit
                 gtilde->S[s].petit_ancetre = gtilde->S[g.adj[s][v]].DFI;
             }
         }
     }
-
-    //Calcul du parent DFS
+    // printf("Fini ancetre\n");
+    // fflush(stdout);
+    //Calcul du parent DFS et insertion dans enfantDFS
     for(int s=0; s<g.n; s++){
-        for(int v = 0; v<g.degre[s]; v++){
+        for(int v = 0; v<4; v++){
+            //printf("s: %d, p: %d, dfi s: %d, dfi p: %d, type: %d\n", s,g.adj[s][v],gtilde->S[s].DFI,gtilde->S[g.adj[s][v]].DFI, g.type[s][v]);
             if( g.type[s][v] > 0 && gtilde->S[s].DFI > gtilde->S[g.adj[s][v]].DFI){
-                gtilde->S[s].parentDFS = g.adj[s][v];
+                //printf("trouve un parent\n");
+                int parent = g.adj[s][v];
+                gtilde->S[s].parentDFS = parent;
+                gtilde->S[parent].enfantsDFS = preinsertion(gtilde->S[parent].enfantsDFS, s);
+                gtilde->S[s].p_parentDFS = gtilde->S[parent].enfantsDFS;
             }
         }
     }
-
+    // printf("Fini parent\n");
+    // fflush(stdout);
     //Calcul du point_min
     for(int i = g.n-1; i>=0; i--){
         int s = g.DFI[i];
         gtilde->S[s].point_min = gtilde->S[s].petit_ancetre;
-        for(int v = 0; v<g.degre[s]; v++){
+        for(int v = 0; v<4; v++){
             if( g.type[s][v] > 0 && gtilde->S[g.adj[s][v]].DFI > gtilde->S[s].DFI //arête de parcours descendante
                 && gtilde->S[g.adj[s][v]].point_min < gtilde->S[s].point_min){
                 gtilde->S[s].point_min = gtilde->S[g.adj[s][v]].point_min;
             }
         }
     }
-    //Creation des enfantsDFS
+    // printf("Fini point min\n");
+    // fflush(stdout);
+
+    //Tri des enfantsDFS
     //on trie les sommets par ordre croissant de point min
-    int* sommets_tries = malloc(g.n*sizeof(int));
-    for(int v = 0; v<g.n; v++){
-        sommets_tries[v] = v;
+    for(int s=0; s<g.n; s++){
+        tri_enfants_DFS(gtilde, s);
     }
-    for(int v = 0; v<g.n; v++){
-        for(int t = v; t<g.n; t++){
-            if(gtilde->S[v].point_min > gtilde->S[t].point_min) {
-                int temp = sommets_tries[v];
-                sommets_tries[v] = sommets_tries[t];
-                sommets_tries[t] = temp;
-            }
-        }
-    }
-    for(int s = 0; s<g.n; s++){
-        //on insère dans la liste doublement chaînée par ordre croissant à la fin de la liste
-        int parent = gtilde->S[sommets_tries[s]].parentDFS;
-        if(parent >= 0) {
-            gtilde->S[parent].enfantsDFS = postinsertion(gtilde->S[parent].enfantsDFS, sommets_tries[s]);
-            gtilde->S[sommets_tries[s]].p_parentDFS = gtilde->S[parent].enfantsDFS->prec;
-        }
-    }
-    free(sommets_tries);
 }
 
 void montee(graphe_comb* gtilde, int w, int v){
@@ -1027,7 +1046,7 @@ void descente(graphe_comb* gtilde, int c){
     }
 }
 
-void DFS_final(graphe_comb gtilde, graphe g, bool* vus, graphe* res, int* orientation, int s){
+void DFS_final(graphe_comb gtilde, bool* vus, graphe* res, int* orientation, int s){
     //N'emprunte que des arêtes du premier DFS
     if(!vus[s]){
         vus[s] = true;
@@ -1074,31 +1093,29 @@ void DFS_final(graphe_comb gtilde, graphe g, bool* vus, graphe* res, int* orient
         int w = gtilde.S[s].adj[0].index;
         if(gtilde.A[w].type != 0){
             *orientation = signe_sommet*gtilde.A[w].type;
-            DFS_final(gtilde, g, vus, res, orientation, gtilde.A[gtilde.A[w].jumelle].voisin.index);
+            DFS_final(gtilde, vus, res, orientation, gtilde.A[gtilde.A[w].jumelle].voisin.index);
         }
         w = gtilde.A[w].adj[1].index;
         while(w != gtilde.S[s].adj[0].index){
             if(gtilde.A[w].type != 0){
                 *orientation = signe_sommet*gtilde.A[w].type;
-                DFS_final(gtilde, g, vus, res, orientation, gtilde.A[gtilde.A[w].jumelle].voisin.index);
+                DFS_final(gtilde, vus, res, orientation, gtilde.A[gtilde.A[w].jumelle].voisin.index);
             }
             w = gtilde.A[w].adj[1].index;
         }
     }
 }
 
-graphe extraction_BM(graphe_comb gtilde, graphe g){
+graphe extraction_BM(graphe_comb gtilde){
     graphe res;
     res.n = gtilde.n;
     res.adj = malloc(res.n*sizeof(int*));
-    res.signes = malloc(res.n*sizeof(int*));
-    res.degre = malloc(res.n*sizeof(int));
     int orientation = 1;
     bool* vus = malloc(gtilde.n*sizeof(bool));
     for(int i=0; i<gtilde.n; i++){
         vus[i] = false;
     }
-    DFS_final(gtilde, g, vus, &res, &orientation, 0);
+    DFS_final(gtilde, vus, &res, &orientation, 0);
     return res;
 }
 
@@ -1108,20 +1125,31 @@ graphe BoyerMyrvold(seq_dt seq){
     //Transformation en un graphe
     graphe g = conversion_seqDT(seq);
     printf("Fini conversion\n");
+    fflush(stdout);
     print_multigraphe(g);
+    fflush(stdout);
     //Simplification du graphe
-    int* signes = malloc(g.n*sizeof(int));
-    graphe g_simple = precalcul_graphe(g);
+    graphe g_simple = simplifier_graphe(g);
     printf("Fini simplification\n");
+    // print_graphe_simple(g_simple);
+    fflush(stdout);
+    precalcul_graphe(&g_simple);
+    printf("Fini dfs\n");
+    fflush(stdout);
     //Initialisation du graphe combinatoire
     graphe_comb gtilde = init_graphe_comb(g_simple);
     printf("Fini initialisation\n");
-    precalcul(g_simple, &gtilde, signes);
+    fflush(stdout);
+    precalcul(g_simple, &gtilde);
     printf("Fini precalcul;\n");
+    fflush(stdout);
     print_graphe_simple(g_simple);
-    free(signes);
+    // printf("Enfants de 0: \n");
+    // print_list(gtilde.S[0].enfantsDFS);
+    // fflush(stdout);
+
         //Boucle principale
-    for(int i = g.n-1; i>=0; i--){ //On traite les sommets par ordre DFI descendant
+    for(int i = g_simple.n-1; i>=0; i--){ //On traite les sommets par ordre DFI descendant
         int v = g_simple.DFI[i];
         printf("-------------Boucle pour v: %d\n", v);
         //Pour chaque enfant de v
@@ -1172,7 +1200,7 @@ graphe BoyerMyrvold(seq_dt seq){
         }
 
         //Pour chaque arete retour entre v et un de ses descendants w
-        for(int j = 0; j<g_simple.degre[v]; j++){
+        for(int j = 0; j<4; j++){
             if(g_simple.type[v][j] < 0 && gtilde.S[g_simple.adj[v][j]].DFI > gtilde.S[v].DFI){ //Si arete retour et descendant
                 int w = g_simple.adj[v][j];
                 montee(&gtilde, w, v); 
@@ -1225,7 +1253,7 @@ graphe BoyerMyrvold(seq_dt seq){
     printf("Fini le sommet 0\n");
     fflush(stdout);
 
-    graphe res = extraction_BM(gtilde, g);
+    graphe res = extraction_BM(gtilde);
     printf("Fini extraction\n");
     fflush(stdout);
     //A FAIRE Tout libérer
@@ -1235,10 +1263,10 @@ graphe BoyerMyrvold(seq_dt seq){
 //Fonctions de test
 void test_conversion(){
     int seq[6] = {3, (-6), 1, 4, (-2), (-5)};
-    int* signes = malloc(6*sizeof(int));
     seq_dt noeud_wiki = {.taille = 6, .seq = seq};
     graphe gnoeud_wiki = conversion_seqDT(noeud_wiki);
-    graphe noeud_wiki_simple = precalcul_graphe(gnoeud_wiki);
+    graphe noeud_wiki_simple = simplifier_graphe(gnoeud_wiki);
+    precalcul_graphe(&noeud_wiki_simple);
     printf("Sequence:\n");
     print_seq_dt(&noeud_wiki);
     printf("Multigraphe:\n");
@@ -1251,11 +1279,10 @@ void test_conversion(){
 void test_precalcul(){
     int seq[6] = {3, (-6), 1, 4, (-2), (-5)};
     seq_dt noeud_wiki = {.taille = 6, .seq = seq};
-    int* signes = malloc(6*sizeof(int));
     graphe gnoeud_wiki = conversion_seqDT(noeud_wiki);
-    graphe noeud_wiki_simple = precalcul_graphe(gnoeud_wiki);
+    graphe noeud_wiki_simple = simplifier_graphe(gnoeud_wiki);
     graphe_comb gtilde = init_graphe_comb(noeud_wiki_simple);
-    precalcul(noeud_wiki_simple, &gtilde, signes);
+    precalcul(noeud_wiki_simple, &gtilde);
     printf("Precalcul:\n");
     print_graphe_comb_initial(gtilde);
 }
@@ -1263,11 +1290,10 @@ void test_precalcul(){
 void test_algo_wiki(){
     int seq[6] = {3, (-6), 1, 4, (-2), (-5)};
     seq_dt noeud_wiki = {.taille = 6, .seq = seq};
-    int* signes = malloc(6*sizeof(int));
     graphe gnoeud_wiki = conversion_seqDT(noeud_wiki);
-    graphe noeud_wiki_simple = precalcul_graphe(gnoeud_wiki);
+    graphe noeud_wiki_simple = simplifier_graphe(gnoeud_wiki);
     graphe_comb gtilde = init_graphe_comb(noeud_wiki_simple);
-    precalcul(noeud_wiki_simple, &gtilde, signes);
+    precalcul(noeud_wiki_simple, &gtilde);
     //printf("Precalcul:\n");
     //print_graphe_comb_initial(gtilde);
     //On modifie gtilde pour arriver à l'état où l'appel à montée(gtilde, 1, 4)
@@ -1482,7 +1508,7 @@ int main(){
     graphe g = BoyerMyrvold(noeud);
     printf("Resultat final:\n");
     fflush(stdout);
-    //print_graphe_simple(g);
+    print_res_BM(g);
 
 
     printf("\nok!\n");
