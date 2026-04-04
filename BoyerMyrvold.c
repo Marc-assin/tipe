@@ -95,7 +95,7 @@ double_liste* suppression(double_liste* lst){ //Supprime le 1er élément
 struct graphe{
     int n;
     int** adj; //tableau de tableaux de taille au plus 4 (4 si multigraphe, moins si graphe simplifié)
-    int** signes; //tableau indiquant si l'arête passe au-dessus (>0), en-dessous (<0), ou est double (graphes simplifiés)
+    int** signes; //tableau indiquant si l'arête passe au-dessus (>0), en-dessous (<0), ou pour le sommet correspondant (graphe simplifié)
     //données pour les graphes simplifiés:
     int* degre; //degre de chaque sommet
     int** type; //tableau indiquant si l'arête est une arete directe (>0) ou retour (<0)
@@ -126,7 +126,6 @@ struct sommet{
     int point_min;
     int visite; //Utilisé dans la Montée
     int flag_arete_retour; //Utilisé dans la Montée
-    int signe_arete; //Indique le signe de la prochaine arete à être implémentée depuis le sommet
     double_liste* racines_pertinentes; 
     double_liste* enfantsDFS; 
     double_liste* p_parentDFS; //Pointe vers la cellule de enfantsDFS de son parent
@@ -147,7 +146,7 @@ struct demi_arete{
     int jumelle; //demi-arete jumelle
     lien_adjacence voisin; //sommet (racine ou non) correspondant
     int type; // 1 ou -1 selon le sens de rotation, 0 si n'est pas une arete de parcours
-    int signe; //Double: 0; au-dessus: 1; en-dessous: -1
+    //int signe; //Double: 0; au-dessus: 1; en-dessous: -1 Seront toutes simples!
     bool reelle; //arête réelle ou raccourci
 };
 
@@ -213,16 +212,6 @@ void print_graphe_simple(graphe g){
         printf("%d: ", i);
         for(int j = 0; j<g.degre[i]; j++){
             printf(" (%d: type %d, signe: %d) ,", g.adj[i][j], g.type[i][j], g.signes[i][j]);
-        }
-        printf("\n");
-    }
-}
-
-void print_graphe_final(graphe g){
-    for(int i=0; i<g.n; i++){
-        printf("%d: ", i);
-        for(int j = 0; j<g.degre[i]; j++){
-            printf(" (%d: signe: %d) ,", g.adj[i][j], g.signes[i][j]);
         }
         printf("\n");
     }
@@ -341,12 +330,12 @@ void print_aretes(graphe_comb g, lieu_adjacence l, int s){
         if (w == -1) return;
         if(g.A[g.A[w].jumelle].voisin.lieu == dansS) lieu = 'S'; else lieu = 'R';
         if(g.A[w].reelle) reelle = 'V'; else reelle = 'F';
-        printf("(%d %c %d, %d %c) ->", w, reelle, g.A[w].signe, g.A[g.A[w].jumelle].voisin.index, lieu);
+        printf("(%d %c, %d %c) ->", w, reelle, g.A[g.A[w].jumelle].voisin.index, lieu);
         w = g.A[w].adj[1].index;
         while(w != g.S[s].adj[0].index){
             if(g.A[g.A[w].jumelle].voisin.lieu == dansS) lieu = 'S'; else lieu = 'R';
             if(g.A[w].reelle) reelle = 'V'; else reelle = 'F';
-            printf("(%d %c %d, %d %c) ->", w, reelle, g.A[w].signe, g.A[g.A[w].jumelle].voisin.index, lieu);
+            printf("(%d %c, %d %c) ->", w, reelle, g.A[g.A[w].jumelle].voisin.index, lieu);
             w = g.A[w].adj[1].index;
         }
     } else {
@@ -396,7 +385,7 @@ void print_graphe_comb_final(graphe_comb g){
 
 //Precalcul
 
-//Convertit une sequence DT en un graphe
+//Convertit une sequence DT en un multigraphe
 graphe conversion_seqDT(seq_dt s){
     int n = s.taille;
     //printf("n=%d\n", n);
@@ -446,6 +435,59 @@ graphe conversion_seqDT(seq_dt s){
     return res;
 };
 
+graphe simplifier_graphe(graphe g){
+    /*Prend un graphe de noeud et ajoute un noeud pour chaque arête autour d'un noeud, reliés par des arêtes*/
+    int** adj = malloc(5*g.n*sizeof(int*));
+    int* signes = malloc(5*g.n*sizeof(int));
+    for(int s = 0; s<g.n; s++){
+        //voisins du sommet réel
+        adj[s][0] = 5*s+1;
+        adj[s][1] = 5*s+2;
+        adj[s][2] = 5*s+3;
+        adj[s][3] = 5*s+4;
+        //voisins du sommet-arete 0
+        adj[5*s+1][0] = s;
+        adj[5*s+1][1] = 5*s+2;
+        for(int j=0; j<4; j++){
+            if(g.adj[g.adj[s][0]][j] == s) adj[5*s+1][2] = 5*g.adj[s][0]+j+1;
+        }
+        adj[5*s+1][3] = 5*s+4;
+        signes[5*s+1] = g.signes[s][0];
+        //voisins du sommet-arete 1
+        adj[5*s+2][0] = s;
+        adj[5*s+2][1] = 5*s+3;
+        for(int j=0; j<4; j++){
+            if(g.adj[g.adj[s][1]][j] == s) adj[5*s+2][2] = 5*g.adj[s][1]+j+1;
+        }
+        adj[5*s+2][3] = 5*s+1;
+        signes[5*s+2] = g.signes[s][1];
+        //voisins du sommet-arete 2
+        adj[5*s+3][0] = s;
+        adj[5*s+3][1] = 5*s+4;
+        for(int j=0; j<4; j++){
+            if(g.adj[g.adj[s][2]][j] == s) adj[5*s+3][2] = 5*g.adj[s][2]+j+1;
+        }
+        adj[5*s+3][3] = 5*s+2;
+        signes[5*s+3] = g.signes[s][2];
+        //voisins du sommet-arete 3
+        adj[5*s+4][0] = s;
+        adj[5*s+4][1] = 5*s+1;
+        for(int j=0; j<4; j++){
+            if(g.adj[g.adj[s][3]][j] == s) adj[5*s+4][2] = 5*g.adj[s][3]+j+1;
+        }
+        adj[5*s+4][3] = 5*s+3;
+        signes[5*s+4] = g.signes[s][3];
+    }
+    graphe res = {
+        .n = 5*g.n,
+        .adj = adj,
+        .signes = signes,
+        .type = NULL,
+        .DFI = NULL,
+    };
+    return res;
+}
+
 //Initialise un graphe issu d'une seq DT en un graphe de BM
 graphe_comb init_graphe_comb(graphe g){
     sommet* sommets = malloc(g.n*sizeof(sommet));
@@ -471,7 +513,6 @@ graphe_comb init_graphe_comb(graphe g){
         sommets[i].racines_pertinentes = NULL;
         sommets[i].enfantsDFS = NULL;
         sommets[i].p_parentDFS = NULL;
-        sommets[i].signe_arete = 0;
         R[i].parent = -1;
     }
     for(int i=0; i<g.n; i++){
@@ -487,11 +528,9 @@ graphe_comb init_graphe_comb(graphe g){
     return newg;
 }
 
-void DFS(graphe g, graphe* newg, bool* vus, int s, int* index, int* signes_sommets){
+void DFS(graphe g, graphe* newg, bool* vus, int s, int* index){
     /*Le DFS:   donne un index DFI a chaque sommet
                 trie les aretes en aretes retour/aretes de parcours
-                simplifie les aretes doubles
-                initialise les signes des sommets
     */
     vus[s] = true;
     newg->DFI[(*index)++] = s;
@@ -528,10 +567,7 @@ void DFS(graphe g, graphe* newg, bool* vus, int s, int* index, int* signes_somme
     for(int i = 0; i<nb_vois; i++){
         if(!vus[newg->adj[s][i]]){
             newg->type[s][i] = 1;
-            //printf("je passe de %d a %d par %d\n", s, newg->adj[s][i], i);
-            //Note le signe de l'arête utilisée pour passer au suivant
-            signes_sommets[newg->adj[s][i]] = newg->signes[s][i];
-            DFS(g,newg,vus,newg->adj[s][i], index, signes);
+            DFS(g,newg,vus,newg->adj[s][i], index);
         } else {
             //on identifie l'arête correspondante et on match son type
             for(int j = 0; j<newg->degre[newg->adj[s][i]]; j++){
@@ -542,7 +578,7 @@ void DFS(graphe g, graphe* newg, bool* vus, int s, int* index, int* signes_somme
     }
 }
 
-graphe precalcul_graphe(graphe g, int* signes){
+graphe precalcul_graphe(graphe g){
     /* Prend un graphe g ayant été extrait d'une sequence DT, et utilise un DFS pour:
     - donner un ordre DFS aux sommets
     - simplifier les aretes doubles
@@ -560,7 +596,7 @@ graphe precalcul_graphe(graphe g, int* signes){
         pnewg->signes[i] = g.signes[i];
     }
     int index = 0;
-    DFS(g, pnewg, vus, 0, &index, signes);
+    DFS(g, pnewg, vus, 0, &index);
     free(vus);
     return *pnewg;
 }
@@ -577,7 +613,6 @@ void precalcul(graphe g, graphe_comb *gtilde, int* signes){
         gtilde->S[s].DFI = i;
         //printf("Assigne %d a %d\n", i, s);
         gtilde->S[s].petit_ancetre = i;
-        gtilde->S[s].signe_arete = signes[s];
     }
     //Calcul de l'ancêtre direct de plus petit indice et DFI
     for(int i = 0; i<g.n; i++){
@@ -635,13 +670,12 @@ void precalcul(graphe g, graphe_comb *gtilde, int* signes){
     free(sommets_tries);
 }
 
-void montee(graphe_comb* gtilde, int w, int v, int signe){
+void montee(graphe_comb* gtilde, int w, int v){
     /* Identifie le sous-graphe pertinent pour l'arête retour (v,w)
         On parcourt le chemin dans l'arbre de v à w en identifiant les sommets coupants, ie les sommets racines
         Le parcours se fait de demi arête en demi arête*/
 
     printf("-----Montee depuis %d:\n\n", w);
-    gtilde->S[w].signe_arete = signe;
     gtilde->S[w].flag_arete_retour = v; //On marque w comme pertinent
     demi_arete x = gtilde->A[gtilde->S[w].adj[0].index] , y = gtilde->A[gtilde->S[w].adj[1].index];
     int entree_x = 0, entree_y = 1; //L'un part sens horaire, l'autre sens trigo
@@ -725,7 +759,7 @@ void fusion_compo_biconnexes(graphe_comb* gtilde){
         while( gtilde->A[gtilde->A[pos].jumelle].voisin.index != rc){ //Ici, c = rc à cause de la manière dont on stocke les sommets racines
             pos = gtilde->A[pos].adj[1].index;
         }
-        gtilde->A[pos].signe = -1;
+        gtilde->A[pos].type = -1;
         sortie_rc = 1 - sortie_rc;
         print_graphe_comb_final(*gtilde);
     }
@@ -795,7 +829,6 @@ void ajout_arete_retour(graphe_comb* gtilde, int c, int dir, int w, int entree_w
     gtilde->A[gtilde->m].adj[dir].lieu = dansA;
     gtilde->A[gtilde->m].adj[1-dir].lieu = dansA;
     gtilde->A[gtilde->m].jumelle = gtilde->m + 1;
-    gtilde->A[gtilde->m].signe = gtilde->S[w].signe_arete;
     gtilde->A[gtilde->m].reelle = true;
     gtilde->A[gtilde->m].type = 1;
     gtilde->A[gtilde->m].voisin.lieu = dansR;
@@ -820,7 +853,6 @@ void ajout_arete_retour(graphe_comb* gtilde, int c, int dir, int w, int entree_w
     gtilde->A[gtilde->m].adj[0].lieu = dansA;
     gtilde->A[gtilde->m].adj[1].lieu = dansA;
     gtilde->A[gtilde->m].jumelle = gtilde->m - 1;
-    gtilde->A[gtilde->m].signe = gtilde->S[w].signe_arete;
     gtilde->A[gtilde->m].reelle = true;
     gtilde->A[gtilde->m].type = 1;
     gtilde->A[gtilde->m].voisin.lieu = dansS;
@@ -847,7 +879,6 @@ void ajout_arete_raccourci(graphe_comb* gtilde, int c, int dir, int w, int entre
     gtilde->A[gtilde->m].adj[0].lieu = dansA;
     gtilde->A[gtilde->m].adj[1].lieu = dansA;
     gtilde->A[gtilde->m].jumelle = gtilde->m + 1;
-    gtilde->A[gtilde->m].signe = 0;
     gtilde->A[gtilde->m].reelle = false;
     gtilde->A[gtilde->m].type = 0;
     gtilde->A[gtilde->m].voisin.lieu = dansR;
@@ -872,7 +903,6 @@ void ajout_arete_raccourci(graphe_comb* gtilde, int c, int dir, int w, int entre
     gtilde->A[gtilde->m].adj[0].lieu = dansA;
     gtilde->A[gtilde->m].adj[1].lieu = dansA;
     gtilde->A[gtilde->m].jumelle = gtilde->m - 1;
-    gtilde->A[gtilde->m].signe = 0;
     gtilde->A[gtilde->m].reelle = false;
     gtilde->A[gtilde->m].type = 0;
     gtilde->A[gtilde->m].voisin.lieu = dansS;
@@ -1009,7 +1039,6 @@ void DFS_final(graphe_comb gtilde, graphe g, bool* vus, graphe* res, int* orient
             if (w == -1) {printf("Arite 0??\n"); return;}
             if(gtilde.A[w].reelle){
                 res->adj[s][i] = gtilde.A[gtilde.A[w].jumelle].voisin.index;
-                res->signes[s][i] = gtilde.A[w].signe;
                 i++;
             }
             w = gtilde.A[w].adj[1].index;
@@ -1017,7 +1046,6 @@ void DFS_final(graphe_comb gtilde, graphe g, bool* vus, graphe* res, int* orient
                 if(gtilde.A[w].reelle){
                     if(i>3){printf("trop d'aretes\n"); return;}
                     res->adj[s][i] = gtilde.A[gtilde.A[w].jumelle].voisin.index;
-                    res->signes[s][i] = gtilde.A[w].signe;
                     i++;
                 }
                 w = gtilde.A[w].adj[1].index;
@@ -1029,7 +1057,6 @@ void DFS_final(graphe_comb gtilde, graphe g, bool* vus, graphe* res, int* orient
             if (w == -1) {printf("Arite 0??\n"); return;}
             if(gtilde.A[w].reelle){
                 res->adj[s][i] = gtilde.A[gtilde.A[w].jumelle].voisin.index;
-                res->signes[s][i] = gtilde.A[w].signe;
                 i++;
             }
             w = gtilde.A[w].adj[0].index;
@@ -1037,7 +1064,6 @@ void DFS_final(graphe_comb gtilde, graphe g, bool* vus, graphe* res, int* orient
                 if(gtilde.A[w].reelle){
                     if(i>3){printf("trop d'aretes\n"); return;}
                     res->adj[s][i] = gtilde.A[gtilde.A[w].jumelle].voisin.index;
-                    res->signes[s][i] = gtilde.A[w].signe;
                     i++;
                 }
                 w = gtilde.A[w].adj[0].index;
@@ -1046,14 +1072,14 @@ void DFS_final(graphe_comb gtilde, graphe g, bool* vus, graphe* res, int* orient
         //On passe au suivant
         int signe_sommet = *orientation;
         int w = gtilde.S[s].adj[0].index;
-        if(gtilde.A[w].signe != 0){
-            *orientation = signe_sommet*gtilde.A[w].signe;
+        if(gtilde.A[w].type != 0){
+            *orientation = signe_sommet*gtilde.A[w].type;
             DFS_final(gtilde, g, vus, res, orientation, gtilde.A[gtilde.A[w].jumelle].voisin.index);
         }
         w = gtilde.A[w].adj[1].index;
         while(w != gtilde.S[s].adj[0].index){
-            if(gtilde.A[w].signe != 0){
-                *orientation = signe_sommet*gtilde.A[w].signe;
+            if(gtilde.A[w].type != 0){
+                *orientation = signe_sommet*gtilde.A[w].type;
                 DFS_final(gtilde, g, vus, res, orientation, gtilde.A[gtilde.A[w].jumelle].voisin.index);
             }
             w = gtilde.A[w].adj[1].index;
@@ -1085,7 +1111,7 @@ graphe BoyerMyrvold(seq_dt seq){
     print_multigraphe(g);
     //Simplification du graphe
     int* signes = malloc(g.n*sizeof(int));
-    graphe g_simple = precalcul_graphe(g, signes);
+    graphe g_simple = precalcul_graphe(g);
     printf("Fini simplification\n");
     //Initialisation du graphe combinatoire
     graphe_comb gtilde = init_graphe_comb(g_simple);
@@ -1123,7 +1149,6 @@ graphe BoyerMyrvold(seq_dt seq){
             gtilde.A[gtilde.m].voisin.lieu = dansR; //relie à vc
             gtilde.A[gtilde.m].type = 1; //initialisé à 1
             gtilde.A[gtilde.m].reelle = true;
-            gtilde.A[gtilde.m].signe = gtilde.S[c].signe_arete;
             gtilde.A[gtilde.m+1].adj[0].lieu = dansA;
             gtilde.A[gtilde.m+1].adj[0].index = gtilde.m+1; //indique la demi-arete précédente, il n'y en a pas: c'est elle-même
             gtilde.A[gtilde.m+1].adj[1].lieu = dansA; //indique la demi-arete suivante, il n'y en a pas: c'est elle-même
@@ -1133,7 +1158,6 @@ graphe BoyerMyrvold(seq_dt seq){
             gtilde.A[gtilde.m+1].voisin.lieu = dansS; //relie à c
             gtilde.A[gtilde.m+1].type = 1; //initialisé à 1
             gtilde.A[gtilde.m+1].reelle = true;
-            gtilde.A[gtilde.m+1].signe = gtilde.S[c].signe_arete;
 
             //On marque la nouvelle demi-arete comme incidente à c
             gtilde.S[c].adj[0].index = gtilde.m+1;
@@ -1151,7 +1175,7 @@ graphe BoyerMyrvold(seq_dt seq){
         for(int j = 0; j<g_simple.degre[v]; j++){
             if(g_simple.type[v][j] < 0 && gtilde.S[g_simple.adj[v][j]].DFI > gtilde.S[v].DFI){ //Si arete retour et descendant
                 int w = g_simple.adj[v][j];
-                montee(&gtilde, w, v, g_simple.signes[v][j]); 
+                montee(&gtilde, w, v); 
             }
         }
         print_graphe_comb_final(gtilde);
@@ -1214,7 +1238,7 @@ void test_conversion(){
     int* signes = malloc(6*sizeof(int));
     seq_dt noeud_wiki = {.taille = 6, .seq = seq};
     graphe gnoeud_wiki = conversion_seqDT(noeud_wiki);
-    graphe noeud_wiki_simple = precalcul_graphe(gnoeud_wiki, signes);
+    graphe noeud_wiki_simple = precalcul_graphe(gnoeud_wiki);
     printf("Sequence:\n");
     print_seq_dt(&noeud_wiki);
     printf("Multigraphe:\n");
@@ -1229,7 +1253,7 @@ void test_precalcul(){
     seq_dt noeud_wiki = {.taille = 6, .seq = seq};
     int* signes = malloc(6*sizeof(int));
     graphe gnoeud_wiki = conversion_seqDT(noeud_wiki);
-    graphe noeud_wiki_simple = precalcul_graphe(gnoeud_wiki, signes);
+    graphe noeud_wiki_simple = precalcul_graphe(gnoeud_wiki);
     graphe_comb gtilde = init_graphe_comb(noeud_wiki_simple);
     precalcul(noeud_wiki_simple, &gtilde, signes);
     printf("Precalcul:\n");
@@ -1241,7 +1265,7 @@ void test_algo_wiki(){
     seq_dt noeud_wiki = {.taille = 6, .seq = seq};
     int* signes = malloc(6*sizeof(int));
     graphe gnoeud_wiki = conversion_seqDT(noeud_wiki);
-    graphe noeud_wiki_simple = precalcul_graphe(gnoeud_wiki, signes);
+    graphe noeud_wiki_simple = precalcul_graphe(gnoeud_wiki);
     graphe_comb gtilde = init_graphe_comb(noeud_wiki_simple);
     precalcul(noeud_wiki_simple, &gtilde, signes);
     //printf("Precalcul:\n");
@@ -1383,8 +1407,8 @@ void test_algo_wiki(){
     //print_graphe_comb(gtilde);
     
     //On teste la montée
-    montee(&gtilde, 4, 1, 0);
-    montee(&gtilde, 5, 1, 0);
+    montee(&gtilde, 4, 1);
+    montee(&gtilde, 5, 1);
     print_graphe_comb_final(gtilde);
     
 
@@ -1430,9 +1454,9 @@ void test_algo_wiki(){
     gtilde.m++;
     gtilde.m++;
     //On teste la montée/descente
-    montee(&gtilde, 2, 0, 0);
+    montee(&gtilde, 2, 0);
     print_graphe_comb_final(gtilde);
-    montee(&gtilde, 3, 0, 0);
+    montee(&gtilde, 3, 0);
     printf("---------Apres la deuxieme montee: --------------\n");
     print_graphe_comb_final(gtilde);
     descente(&gtilde, 1);
@@ -1440,10 +1464,7 @@ void test_algo_wiki(){
 
 }
 
-/*Pour se rappeler du signe de l'arête:
-Lors de la montée, on peut rajouter un champ avec le signe, lors de l'implémentation de l'arête retour
-Lors du 1er DFS, on ajoute un champ avec le signe de l'arete avec le parent, qui peut être le même
-!!! LES ARETES RETOUR AUSSI DOIVENT VOIR LEUR SIGNE INITIALISE OU PAS JSP*/
+/*Pour se rappeler du signe de l'arête: on regarde que le signe de 0 à 1 ehe*/
 
 int main(){
     //test_conversion();
