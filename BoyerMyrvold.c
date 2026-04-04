@@ -451,6 +451,8 @@ graphe simplifier_graphe(graphe g){
     int* signes = malloc(5*(g.n)*sizeof(int));
     int* DFI = malloc(5*(g.n)*sizeof(int));
     int** types = malloc(5*(g.n)*sizeof(int*));
+    
+
     // printf("nb sommets: %d\n", g.n);
     for(int s = 0; s<g.n; s++){
         // printf("Traitement sommet %d\n", s);
@@ -505,6 +507,11 @@ graphe simplifier_graphe(graphe g){
         signes[5*s+4] = g.signes[s][3];
     }
 
+    for(int s = 0; s<5*g.n; s++){
+        for(int a = 0; a<4; a++){
+            types[s][a] = -1;
+        }
+    }
     graphe res = {
         .n = 5*g.n,
         .adj = adj,
@@ -745,6 +752,7 @@ void fusion_compo_biconnexes(graphe_comb* gtilde){
     /*La pile contient (du haut vers le bas):
         sortie_wc, wc, entree_w, w*/
     print_pile(gtilde->P);
+    fflush(stdout);
     int sortie_rc = top(gtilde->P);
     gtilde->P = pop(gtilde->P);
     int rc = top(gtilde->P);
@@ -755,6 +763,7 @@ void fusion_compo_biconnexes(graphe_comb* gtilde){
     gtilde->P = pop(gtilde->P);
     if(entree_r == sortie_rc){ //on a la garantie que les sommets traversés ne sont pas ext actifs
         printf("\n---On a inverse le sens:\n");
+        fflush(stdout);
         //On inverse le sens de la liste des demi-arêtes de rc
         int temp = gtilde->R[rc].lien[0].index;
         gtilde->R[rc].lien[0].index = gtilde->R[rc].lien[1].index;
@@ -787,14 +796,14 @@ void fusion_compo_biconnexes(graphe_comb* gtilde){
     //On redirige les arêtes
     int pos = gtilde->R[rc].lien[0].index;
     while(gtilde->A[pos].voisin.index != r){ //On dit que les arêtes pointent maintenant vers r
-        //printf("Redirige l'arete %d vers %d\n", pos, r);
+        printf("Redirige l'arete %d vers %d\n", pos, r);fflush(stdout);
         gtilde->A[pos].voisin.index = r;
         gtilde->A[pos].voisin.lieu = dansS;
 
         pos = gtilde->A[pos].adj[1].index;
     }
+    printf("redirection ok\n");fflush(stdout);
     //On ne retire pas rc des racines pertinentes de r car deja fait dans la descente
-
     //On retire c de la liste des enfants DFS de r
     gtilde->S[r].enfantsDFS = suppression(gtilde->S[rc].p_parentDFS);
 
@@ -806,7 +815,7 @@ void fusion_compo_biconnexes(graphe_comb* gtilde){
     print_aretes(*gtilde, dansR, rc);
     printf("Aretes de %d: ", r);
     print_aretes(*gtilde, dansS, r);
-
+    fflush(stdout);
     //On distingue selon r_in
     if(entree_r == 1){
         gtilde->A[gtilde->S[r].adj[0].index].adj[0] = gtilde->R[rc].lien[1]; 
@@ -965,13 +974,13 @@ void descente(graphe_comb* gtilde, int c){
         // if(w.voisin.lieu == dansS) l = 'S'; else l='R';
         // printf("Successeur: %d%c par %d\n", w.voisin.index,l, entree_w);
         while(w.voisin.lieu != dansR || w.voisin.index != c){ //Tant qu'on n'est pas revenu au point de départ
-            printf("Entre dans le while: %d par %d,", w.voisin.index, entree_w);
-            if(w.voisin.lieu == dansR){printf("R\n");} else printf("S\n");
+            printf("Entre dans le while: %d par %d,", w.voisin.index, entree_w); 
+            if(w.voisin.lieu == dansR){printf("R\n");} else printf("S\n");fflush(stdout);
             
             //Invariant de boucle: w est une demi-arete liée à un sommet réel (pas racine)
             //w est la demi arête par laquelle on est entré dans le sommet
             
-            if(w.voisin.lieu != dansS) {printf("sommet virtuel dans le while\n"); return;}
+            if(w.voisin.lieu != dansS) {printf("sommet virtuel dans le while\n");fflush(stdout); return;}
             // printf("Inactif: %d\n", inactif(*gtilde, v, w.voisin.index));
             // printf("Pertinent: %d\n", pertinent(*gtilde, v, w.voisin.index));
             // printf("Actif Externe: %d\n", actif_externe(*gtilde, v, w.voisin.index));
@@ -980,11 +989,11 @@ void descente(graphe_comb* gtilde, int c){
 
             if(sw.flag_arete_retour == v){ //On a trouvé une arete retour à ajouter
                 while(gtilde->P != NULL){
-                    printf("Fusion\n\n");
+                    printf("Fusion\n\n");fflush(stdout);
                     fusion_compo_biconnexes(gtilde);
                     //print_graphe_comb_final(*gtilde);
                 }
-                printf("Ajout arete retour v%d, %d\n\n", c, w.voisin.index);
+                printf("Ajout arete retour v%d, %d\n\n", c, w.voisin.index);fflush(stdout);
                 ajout_arete_retour(gtilde, c, dir, w.voisin.index, entree_w);
                 gtilde->S[w.voisin.index].flag_arete_retour = gtilde->n;
                 print_graphe_comb_final(*gtilde);
@@ -992,7 +1001,7 @@ void descente(graphe_comb* gtilde, int c){
 
             if(sw.racines_pertinentes != NULL){
                 //On doit push w et entree w
-                printf("Racines pertinentes trouvees: %d\n", w.voisin.index);
+                printf("Racines pertinentes trouvees: %d\n", w.voisin.index);fflush(stdout);
                 gtilde->P = push(gtilde->P, w.voisin.index);
                 gtilde->P = push(gtilde->P, entree_w);
 
@@ -1000,15 +1009,15 @@ void descente(graphe_comb* gtilde, int c){
                 gtilde->S[w.voisin.index].racines_pertinentes = suppression(gtilde->S[w.voisin.index].racines_pertinentes); //Pas dans le papier originel, source éventuelle de bug
                 demi_arete x = gtilde->A[gtilde->R[wc].lien[1].index]; int entree_x = 1; 
                 demi_arete y = gtilde->A[gtilde->R[wc].lien[0].index]; int entree_y = 0;
-                printf("wc: %d, x: %d, y: %d\n",wc, gtilde->R[wc].lien[1].index, gtilde->R[wc].lien[0].index);
+                printf("wc: %d, x: %d, y: %d\n",wc, gtilde->R[wc].lien[1].index, gtilde->R[wc].lien[0].index);fflush(stdout);
                 successeur_face_ext(*gtilde, &x, &entree_x);
                 successeur_face_ext(*gtilde, &y, &entree_y);
 
                 printf("x: %d, y: %d\n", x.voisin.index, y.voisin.index);
 
-                if(actif_interne(*gtilde, v, x.voisin.index)){w = x; entree_w = entree_x; printf("Interne x\n");}
-                else if(actif_interne(*gtilde, v, y.voisin.index)){w = y; entree_w = entree_y;printf("Interne y\n");}
-                else if(pertinent(*gtilde, v, x.voisin.index)){w = x; entree_w = entree_x;printf("Pertinent x\n");}
+                if(actif_interne(*gtilde, v, x.voisin.index)){w = x; entree_w = entree_x; printf("Interne x\n");fflush(stdout);}
+                else if(actif_interne(*gtilde, v, y.voisin.index)){w = y; entree_w = entree_y;printf("Interne y\n");fflush(stdout);}
+                else if(pertinent(*gtilde, v, x.voisin.index)){w = x; entree_w = entree_x;printf("Pertinent x\n");fflush(stdout);}
                 else {w = y; entree_w = entree_y;printf("else y\n");}
                 fflush(stdout);
                 int sortie_w; 
@@ -1021,27 +1030,28 @@ void descente(graphe_comb* gtilde, int c){
                 fflush(stdout);
 
             } else if(inactif(*gtilde, v, w.voisin.index)){
-                printf("inactif\n");
+                printf("inactif\n");fflush(stdout);
                 successeur_face_ext(*gtilde, &w, &entree_w);
             } else { //w est un sommet stoppant
                 if(gtilde->P == NULL && gtilde->S[c].point_min < v){
                     if(gtilde->A[gtilde->S[c].adj[0].index].voisin.index == w.voisin.index){
-                        printf("Pas de double raccourci!\n");
+                        printf("Pas de double raccourci!\n");fflush(stdout);
                     } else{
                         printf("Ajout arete raccourci %d %d, %d %d\n\n", c, dir, w.voisin.index, entree_w);
-                        printf("%d vs %d\n", gtilde->A[gtilde->S[c].adj[dir].index].voisin.index, w.voisin.index);
+                        printf("%d vs %d\n", gtilde->A[gtilde->S[c].adj[dir].index].voisin.index, w.voisin.index);fflush(stdout);
                         ajout_arete_raccourci(gtilde, c, dir, w.voisin.index, entree_w);
                         //print_graphe_comb_final(*gtilde);
+                        fflush(stdout);
                     }
                     
                 }
-                printf("Break: %d\n", w.voisin.index);
+                printf("Break: %d\n", w.voisin.index);fflush(stdout);
                 break;
             }
         }
         char l;
         if(w.voisin.lieu == dansR) l = 'R'; else l = 'P';
-        printf("Fin de while: %c, %d\n", l, w.voisin.index);
+        printf("Fin de while: %c, %d\n", l, w.voisin.index);fflush(stdout);
         if(gtilde->P != NULL) break;
     }
 }
