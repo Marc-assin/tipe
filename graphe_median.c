@@ -766,11 +766,17 @@ arete_arr calculer_aretes(graphe g){
 
 #include <math.h>
 #define PI 3.14159265358979323846
+#include <assert.h>
 
 double phi_prime(int s, double *x, graphe H){
     double sum = 0.0;
     for (int i = 0; i < H.adj[s]->taille; i++){
         int j = get_ivec(H.adj[s], i);
+        if (j == -1){ continue; } // on ne prend pas la face exterieure en compte
+        // assert(j < H.n);
+        // assert(s < H.n);
+        // assert(j >= 0);
+        // assert(s >= 0);
         sum += atan(exp(x[s]-x[j])) - atan(exp(x[j]-x[s])) - PI / 2.0;
     }
     sum += PI * 2.0;
@@ -1043,7 +1049,7 @@ vec* calculer_positions(double *r, graphe_angles_reduit gar){
         ecrire_cercle_python(f, positions[s].x, positions[s].y, r[s]);
         int j = 0; 
         int deg = gar.H.adj[s]->taille;
-        while (places[get_ivec(gar.H.adj[s], j)] == false){
+        while (get_ivec(gar.H.adj[s], j) == -1 || places[get_ivec(gar.H.adj[s], j)] == false){ // on saute la face ext
             j = (j+1)%deg;
         }
         bool sens_inverse = false;
@@ -1051,14 +1057,14 @@ vec* calculer_positions(double *r, graphe_angles_reduit gar){
             int voisin = get_ivec(gar.H.adj[s], j);
             printf("voisin %d, %e, %e, %e\n", voisin, positions[voisin].x, positions[voisin].y, r[voisin]);
             j = (j+1)%deg;
-            if (places[get_ivec(gar.H.adj[s], j)]) {
-                continue;
-            }
             int w = get_ivec(gar.H.adj[s], j); 
             if (w == -1){
                 sens_inverse = true;
                 j = (deg + j - 1)%deg;
                 break;
+            }
+            if (places[w]) {
+                continue;
             }
             printf("pour placer %d, %e\n", w, r[voisin]);
             double actual_dist = dist(positions[s], positions[voisin]);
@@ -1380,6 +1386,8 @@ void calculer_svg(vec *pos, double *r, graphe_tait gt, char* filename){
     }
     fprintf(f, "</svg>\n");
     fclose(f);
+    free(pos_intersections);
+    free(inited);
 }
 
 int main(){
