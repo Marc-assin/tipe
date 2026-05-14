@@ -1,6 +1,6 @@
 #include "knot_gen.c"
 #include <stdio.h>
-
+#include <assert.h>
 //Structures utiles
 struct intlist{
     int val;
@@ -95,11 +95,13 @@ double_liste* suppression(double_liste* lst){ //Supprime le 1er élément
 struct graphe{
     int n;
     int** adj; //tableau de tableaux de taille au plus 4 (4 si multigraphe, moins si graphe simplifié)
-    int** signes; //tableau indiquant si l'arête passe au-dessus (>0), en-dessous (<0)
+    int** signes; //tableau indiquant si l'arête passe au-dessus (>0), en-dessous (<0), ou 0 si entre deux sommet-arete
     //données pour les graphes simplifiés:
-    int* signe_sommet; //signe de chaque sommet_arête
+    int* signe_sommet; //signe de chaque sommet-arête
     int** type; //tableau indiquant si l'arête est une arete directe (>0) ou retour (<0)
-    int* DFI; //tableau indiquant l'ordre du DFS
+    int* type_sommet; //Indique si le sommet représente: un sommet = 0, une arete simple = 1, une arete double = 2 
+    int* DFI; //tableau indiquant l'ordre du DFS: les sommets dans l'ordre
+    int* indices_DFI; //L'indice DFI de chaque sommet
 };
 
 typedef struct graphe graphe;
@@ -122,7 +124,7 @@ struct sommet{
     lien_adjacence adj[2]; //tableau de taille 2: relie aux demi arêtes de la face extérieure
     int parentDFS;
     int DFI;
-    int petit_ancetre;
+    int petit_ancetre; //DFI de l'ancetre direct de plus petit indice
     int point_min;
     int visite; //Utilisé dans la Montée
     int flag_arete_retour; //Utilisé dans la Montée
@@ -146,7 +148,7 @@ struct demi_arete{
     int jumelle; //demi-arete jumelle
     lien_adjacence voisin; //sommet (racine ou non) correspondant
     int type; // 1 ou -1 selon le sens de rotation, 0 si n'est pas une arete de parcours
-    //int signe; //Double: 0; au-dessus: 1; en-dessous: -1 Seront toutes simples!
+    int signe; //Double: 0; au-dessus: 1; en-dessous: -1
     bool reelle; //arête réelle ou raccourci
 };
 
@@ -162,7 +164,6 @@ struct graphe_comb{
 };
 
 typedef struct graphe_comb graphe_comb;
-
 
 //Fonctions utiles
 
@@ -445,19 +446,32 @@ graphe conversion_seqDT(seq_dt s){
     return res;
 };
 
+//Debuggé
 graphe simplifier_graphe(graphe g){
     /*Prend un graphe de noeud
-    Ajoute un sommet pour chaque arête
+    Ajoute deux sommets pour chaque arête
     Met des aretes entre: 
-     - une arete et les sommets qu'elle relie
+     - une arete et le sommet qu'elle relie
+     - deux sommets correspondant à la même arete
      - des aretes consécutives
-     - retient qui est une arete double*/
+     - retient qui est une arete double
+    Resultat:
+    Contient encore des -1 !*/
 
     int** adj = malloc(5*(g.n)*sizeof(int*));
     int* signes = malloc(5*(g.n)*sizeof(int));
     int* DFI = malloc(5*(g.n)*sizeof(int));
     int** types = malloc(5*(g.n)*sizeof(int*));
+    int* type_sommets = malloc(5*(g.n)*sizeof(int));
+    int* indices_DFI = malloc(5*(g.n)*sizeof(int));
     int nb_sommets = g.n;
+
+    //On initialise les sommets
+    for(int s = 0; s<g.n; s++){
+        adj[s] = malloc(4*sizeof(int));
+        types[s] = malloc(4*sizeof(int));
+        type_sommets[s] = 0;
+    }
 
     for(int s = 0; s<g.n; s++){
         printf("Traitement sommet %d\n", s);
@@ -468,79 +482,102 @@ graphe simplifier_graphe(graphe g){
             if(g.adj[s][j] != -1){ //On n'a pas déjà traité l'arête
                 printf("arete ok\n");
                 fflush(stdout);
-                printf("nb somm: %d, taille adj: %d\n", nb_sommets, g.n*5);
-                fflush(stdout);
-                
                 adj[nb_sommets] = malloc(4*sizeof(int));
                 types[nb_sommets] = malloc(4*sizeof(int));
+                adj[nb_sommets+1] = malloc(4*sizeof(int));
+                types[nb_sommets+1] = malloc(4*sizeof(int));
 
-                if(adj[nb_sommets] == NULL || adj[nb_sommets] == NULL) printf("malloc failed\n");
-                printf("malloc ok\n");
-                fflush(stdout);
-
-                int j_voisin; //le numéro d'arête chez le voisin
+                int j_voisin = -1; //le numéro d'arête chez le voisin
                 for(int k=0; k<4; k++){
                     if(g.adj[g.adj[s][j]][k] == s) j_voisin = k;
+                }
+                if(j_voisin == -1){
+                    printf("Pas chez le voisin????\n");
+                    assert(false);
                 }
                 printf("j vois ok\n");
                 fflush(stdout);
                 //On teste si l'arête n'est pas en réalité double
                 if(j>0 && g.adj[s][j] == g.adj[s][j-1]){
-                    // A FAIRE: remplir le champ arete double de g.adj[s][j]
+                    type_sommets[nb_sommets] = -1; //N'est relié à rien
+                    type_sommets[nb_sommets+1] = -1;
+                    type_sommets[adj[s][j-1]] = 2;
+                    type_sommets[adj[adj[s][j-1]][2]] = 2;
+                    adj[nb_sommets][2] = -1;
+                    adj[nb_sommets+1][2] = -1;
                 } else if(j>0 && g.adj[s][j] == g.adj[s][0]) {
-                    //A FAIRE: remplir le champ arete double de 0
+                    type_sommets[nb_sommets] = -1; //N'est relié à rien
+                    type_sommets[nb_sommets+1] = -1;
+                    type_sommets[adj[s][0]] = 2;
+                    type_sommets[adj[adj[s][0]][2]] = 2;
+                    adj[nb_sommets][2] = -1;
+                    adj[nb_sommets+1][2] = -1;
                 } else{ //Il y a réellement une arête à créer
                     printf("Arete simple\n");
                     fflush(stdout);
-                    adj[g.adj[s][j]][j_voisin] = nb_sommets;
-                    adj[nb_sommets][1] = g.adj[s][j];
+                    type_sommets[nb_sommets] = 1;
+                    type_sommets[nb_sommets+1] = 1;
+                    adj[nb_sommets][2] = nb_sommets+1;
+                    adj[nb_sommets+1][2] = nb_sommets;
                 }
                 adj[s][j] = nb_sommets;
                 adj[nb_sommets][0] = s;
+                adj[g.adj[s][j]][j_voisin] = nb_sommets+1;
+                adj[nb_sommets+1][0] = g.adj[s][j];
 
                 //On marque l'arête comme traitée
                 g.adj[g.adj[s][j]][j_voisin] = -1;
                 g.adj[s][j] = -1;
-                
+                nb_sommets++;
+                nb_sommets++;
             }
-            nb_sommets++;
+            
         }
 
         //On relie les arêtes entre elles
 
         for(int j=0; j<4; j++){
-            adj[nb_sommets-4+j][1] = nb_sommets-4+((j+3)%4);
-            adj[nb_sommets-4+j][3] = nb_sommets-4+((j+1)%4);
+            if(adj[s][(j+3)%4] != adj[adj[s][j]][2]) {
+                adj[adj[s][j]][1] = adj[s][(j+3)%4];
+            } else{
+                adj[adj[s][j]][1] = -1;
+            }
+            if(adj[s][(j+1)%4] != adj[adj[s][j]][2]) {
+                adj[adj[s][j]][3] = adj[s][(j+1)%4];
+            } else {
+                adj[adj[s][j]][3] = -1;
+            }
         }
+        printf("Fini sommet %d\n", s);
+        fflush(stdout);
     }
 
-    for(int s = 0; s<5*g.n; s++){
+    for(int s = 0; s<nb_sommets; s++){
         for(int a = 0; a<4; a++){
             types[s][a] = -1;
         }
     }
     //ATTENTION: la taille du tableau est 5*g.n, pas nb_sommets
+    //Contient des -1
     graphe res = {
         .n = nb_sommets,
         .adj = adj,
         .signe_sommet = signes,
         .type = types,
         .DFI = DFI,
+        .type_sommet = type_sommets,
+        .indices_DFI = indices_DFI
     };
     return res;
 }
 
-//Initialise un graphe issu d'une seq DT en un graphe de BM
+//Initialise un graphe de bon cardinal
 graphe_comb init_graphe_comb(graphe g){
     sommet* sommets = malloc(g.n*sizeof(sommet));
     sommet_racine* R = malloc(g.n*sizeof(sommet_racine));
     demi_arete* A = malloc(8*g.n*sizeof(demi_arete));
     pile* P = init_pile();
 
-    if (!sommets || !R || !A ) {
-        printf("Allocation failed\n");
-        exit(1);
-    }
     for(int i=0; i<g.n; i++){
         sommets[i].adj[0].index = -1;
         sommets[i].adj[1].index = -1;
@@ -570,6 +607,7 @@ graphe_comb init_graphe_comb(graphe g){
     return newg;
 }
 
+//Debuggé
 void DFS(graphe* g, bool* vus, int s, int* index){
     /*Le DFS:   donne un index DFI a chaque sommet
                 trie les aretes en aretes retour/aretes de parcours
@@ -577,12 +615,13 @@ void DFS(graphe* g, bool* vus, int s, int* index){
 //    printf("traite sommet %d\n", s);
 //    fflush(stdout);
     vus[s] = true;
+    g->indices_DFI[s] = *index;
     g->DFI[(*index)++] = s;
     for(int i = 0; i<4; i++){
-        if(!vus[g->adj[s][i]]){
+        if(g->adj[s][i] > -1 && !vus[g->adj[s][i]]){
             g->type[s][i] = 1;
             DFS(g,vus,g->adj[s][i], index);
-        } else { 
+        } else if (g->adj[s][i] > -1){ 
             //on identifie l'arête correspondante et on match son type
             for(int j = 0; j<4; j++){
                 if(g->adj[g->adj[s][i]][j] == s) g->type[s][i] = g->type[g->adj[s][i]][j] ;
@@ -590,7 +629,7 @@ void DFS(graphe* g, bool* vus, int s, int* index){
         }
     }
 }
-
+//Debuggé
 void precalcul_graphe(graphe* g){
     /* Prend un graphe g simplifié ayant été extrait d'une sequence DT, et utilise un DFS pour:
     - donner un ordre DFS aux sommets
@@ -605,6 +644,7 @@ void precalcul_graphe(graphe* g){
 }
 
 void tri_enfants_DFS(graphe_comb* gtilde, int s){
+    /*Tri de la liste (à au plus 4 éléments) des enfants DFS d'un sommet*/
     // printf("tri enfants de %d\n", s);
     // fflush(stdout);
     if(gtilde->S[s].enfantsDFS != NULL){
@@ -639,7 +679,7 @@ void tri_enfants_DFS(graphe_comb* gtilde, int s){
         }
     }
 }
-
+//Normalement marche
 void precalcul(graphe g, graphe_comb *gtilde){
     /*Modifie gtilde précédemment initialisé: (g est le graphe simplifié déjà parcouru)
         - calcule le parent DFS de chaque sommet
@@ -647,16 +687,14 @@ void precalcul(graphe g, graphe_comb *gtilde){
         - calcule les points_min des sommets
         - donne les enfants DFS des sommets*/
     print_tab(g.DFI, g.n);
-    //Calcul de l'indice DFI
-    for(int i = 0; i<g.n; i++){ 
-        int s = g.DFI[i];
-        gtilde->S[s].DFI = i;
-        // printf("Assigne %d a %d\n", i, s);
-        // fflush(stdout);
-        gtilde->S[s].petit_ancetre = i;
+    //Reporte l'indice DFI
+    for(int s = 0; s<g.n; s++){ 
+        gtilde->S[s].DFI = g.indices_DFI[s];
+        gtilde->S[s].petit_ancetre = g.indices_DFI[s];
     }
     // printf("Fini DFI\n");
     // fflush(stdout);
+
     //Calcul de l'ancêtre direct de plus petit indice et DFI
     for(int i = 0; i<g.n; i++){
         int s = g.DFI[i];
@@ -1149,7 +1187,7 @@ graphe BoyerMyrvold(seq_dt seq){
     //Simplification du graphe
     graphe g_simple = simplifier_graphe(g);
     printf("Fini simplification\n");
-    // print_graphe_simple(g_simple);
+    print_graphe_simple(g_simple);
     fflush(stdout);
     precalcul_graphe(&g_simple);
     printf("Fini dfs\n");
@@ -1162,9 +1200,6 @@ graphe BoyerMyrvold(seq_dt seq){
     printf("Fini precalcul;\n");
     fflush(stdout);
     print_graphe_simple(g_simple);
-    // printf("Enfants de 0: \n");
-    // print_list(gtilde.S[0].enfantsDFS);
-    // fflush(stdout);
 
         //Boucle principale
     for(int i = g_simple.n-1; i>=0; i--){ //On traite les sommets par ordre DFI descendant
@@ -1301,6 +1336,7 @@ void test_precalcul(){
     seq_dt noeud_wiki = {.taille = 6, .seq = seq};
     graphe gnoeud_wiki = conversion_seqDT(noeud_wiki);
     graphe noeud_wiki_simple = simplifier_graphe(gnoeud_wiki);
+    precalcul_graphe(&noeud_wiki_simple);
     graphe_comb gtilde = init_graphe_comb(noeud_wiki_simple);
     precalcul(noeud_wiki_simple, &gtilde);
     printf("Precalcul:\n");
@@ -1511,9 +1547,13 @@ void test_algo_wiki(){
 }
 
 /*Pour se rappeler du signe de l'arête: on regarde que le signe de 0 à 1 ehe*/
-
+/*A FAIRE (par ordre de prio)
+Truc shady dans la boucle principale: pourquoi l'arete entre c et vc serait la seule arete de c (c ptet logique)
+Adapter la retenue de: le type d'une arete
+Le parcours des aretes: vérifier que les aretes -1 ne posent pas de pbs
+Changer le truc des liens/lieu d'adjacence c'est ridicule un peu*/
 int main(){
-    test_conversion();
+    //test_conversion();
     //test_precalcul();
     //test_algo_wiki();
 
