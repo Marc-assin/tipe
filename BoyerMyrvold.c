@@ -446,65 +446,72 @@ graphe conversion_seqDT(seq_dt s){
 };
 
 graphe simplifier_graphe(graphe g){
-    /*Prend un graphe de noeud et ajoute un noeud pour chaque arête autour d'un noeud, reliés par des arêtes*/
+    /*Prend un graphe de noeud
+    Ajoute un sommet pour chaque arête
+    Met des aretes entre: 
+     - une arete et les sommets qu'elle relie
+     - des aretes consécutives
+     - retient qui est une arete double*/
+
     int** adj = malloc(5*(g.n)*sizeof(int*));
     int* signes = malloc(5*(g.n)*sizeof(int));
     int* DFI = malloc(5*(g.n)*sizeof(int));
     int** types = malloc(5*(g.n)*sizeof(int*));
-    
+    int nb_sommets = g.n;
 
-    // printf("nb sommets: %d\n", g.n);
     for(int s = 0; s<g.n; s++){
-        // printf("Traitement sommet %d\n", s);
-        // fflush(stdout);
-        adj[5*s] = malloc(4*sizeof(int));
-        adj[5*s+1] = malloc(4*sizeof(int));
-        adj[5*s+2] = malloc(4*sizeof(int));
-        adj[5*s+3] = malloc(4*sizeof(int));
-        adj[5*s+4] = malloc(4*sizeof(int));
-        types[5*s] = malloc(4*sizeof(int));
-        types[5*s+1] = malloc(4*sizeof(int));
-        types[5*s+2] = malloc(4*sizeof(int));
-        types[5*s+3] = malloc(4*sizeof(int));
-        types[5*s+4] = malloc(4*sizeof(int));
+        printf("Traitement sommet %d\n", s);
+        fflush(stdout);
+        for(int j = 0; j<4; j++){
+            printf("Traitement arete %d, nb sommets: %d\n", j, nb_sommets);
+            fflush(stdout);
+            if(g.adj[s][j] != -1){ //On n'a pas déjà traité l'arête
+                printf("arete ok\n");
+                fflush(stdout);
+                printf("nb somm: %d, taille adj: %d\n", nb_sommets, g.n*5);
+                fflush(stdout);
+                
+                adj[nb_sommets] = malloc(4*sizeof(int));
+                types[nb_sommets] = malloc(4*sizeof(int));
 
-        //voisins du sommet réel
-        adj[5*s][0] = 5*s+1;
-        adj[5*s][1] = 5*s+2;
-        adj[5*s][2] = 5*s+3;
-        adj[5*s][3] = 5*s+4;
-        //voisins du sommet-arete 0
-        adj[5*s+1][0] = 5*s;
-        adj[5*s+1][1] = 5*s+2;
-        for(int j=0; j<4; j++){
-            if(g.adj[g.adj[s][0]][j] == s) adj[5*s+1][2] = 5*g.adj[s][0]+j+1;
+                if(adj[nb_sommets] == NULL || adj[nb_sommets] == NULL) printf("malloc failed\n");
+                printf("malloc ok\n");
+                fflush(stdout);
+
+                int j_voisin; //le numéro d'arête chez le voisin
+                for(int k=0; k<4; k++){
+                    if(g.adj[g.adj[s][j]][k] == s) j_voisin = k;
+                }
+                printf("j vois ok\n");
+                fflush(stdout);
+                //On teste si l'arête n'est pas en réalité double
+                if(j>0 && g.adj[s][j] == g.adj[s][j-1]){
+                    // A FAIRE: remplir le champ arete double de g.adj[s][j]
+                } else if(j>0 && g.adj[s][j] == g.adj[s][0]) {
+                    //A FAIRE: remplir le champ arete double de 0
+                } else{ //Il y a réellement une arête à créer
+                    printf("Arete simple\n");
+                    fflush(stdout);
+                    adj[g.adj[s][j]][j_voisin] = nb_sommets;
+                    adj[nb_sommets][1] = g.adj[s][j];
+                }
+                adj[s][j] = nb_sommets;
+                adj[nb_sommets][0] = s;
+
+                //On marque l'arête comme traitée
+                g.adj[g.adj[s][j]][j_voisin] = -1;
+                g.adj[s][j] = -1;
+                
+            }
+            nb_sommets++;
         }
-        adj[5*s+1][3] = 5*s+4;
-        signes[5*s+1] = g.signes[s][0];
-        //voisins du sommet-arete 1
-        adj[5*s+2][0] = 5*s;
-        adj[5*s+2][1] = 5*s+3;
+
+        //On relie les arêtes entre elles
+
         for(int j=0; j<4; j++){
-            if(g.adj[g.adj[s][1]][j] == s) adj[5*s+2][2] = 5*g.adj[s][1]+j+1;
+            adj[nb_sommets-4+j][1] = nb_sommets-4+((j+3)%4);
+            adj[nb_sommets-4+j][3] = nb_sommets-4+((j+1)%4);
         }
-        adj[5*s+2][3] = 5*s+1;
-        signes[5*s+2] = g.signes[s][1];
-        //voisins du sommet-arete 2
-        adj[5*s+3][0] = 5*s;
-        adj[5*s+3][1] = 5*s+4;
-        for(int j=0; j<4; j++){
-            if(g.adj[g.adj[s][2]][j] == s) adj[5*s+3][2] = 5*g.adj[s][2]+j+1;
-        }
-        adj[5*s+3][3] = 5*s+2;
-        signes[5*s+3] = g.signes[s][2];
-        //voisins du sommet-arete 3
-        adj[5*s+4][0] = 5*s;
-        adj[5*s+4][1] = 5*s+1;
-        for(int j=0; j<4; j++){
-            if(g.adj[g.adj[s][3]][j] == s) adj[5*s+4][2] = 5*g.adj[s][3]+j+1;
-        }
-        adj[5*s+4][3] = 5*s+3;
-        signes[5*s+4] = g.signes[s][3];
     }
 
     for(int s = 0; s<5*g.n; s++){
@@ -512,8 +519,9 @@ graphe simplifier_graphe(graphe g){
             types[s][a] = -1;
         }
     }
+    //ATTENTION: la taille du tableau est 5*g.n, pas nb_sommets
     graphe res = {
-        .n = 5*g.n,
+        .n = nb_sommets,
         .adj = adj,
         .signe_sommet = signes,
         .type = types,
@@ -1274,16 +1282,18 @@ graphe BoyerMyrvold(seq_dt seq){
 void test_conversion(){
     int seq[6] = {3, (-6), 1, 4, (-2), (-5)};
     seq_dt noeud_wiki = {.taille = 6, .seq = seq};
-    graphe gnoeud_wiki = conversion_seqDT(noeud_wiki);
-    graphe noeud_wiki_simple = simplifier_graphe(gnoeud_wiki);
-    precalcul_graphe(&noeud_wiki_simple);
     printf("Sequence:\n");
     print_seq_dt(&noeud_wiki);
+    fflush(stdout);
+    graphe gnoeud_wiki = conversion_seqDT(noeud_wiki);
     printf("Multigraphe:\n");
     print_multigraphe(gnoeud_wiki);
+    fflush(stdout);
+    graphe noeud_wiki_simple = simplifier_graphe(gnoeud_wiki);
+    precalcul_graphe(&noeud_wiki_simple);
     printf("Graphe simple:\n");
     print_graphe_simple(noeud_wiki_simple);
-    return;
+    fflush(stdout);
 }
 
 void test_precalcul(){
@@ -1503,7 +1513,7 @@ void test_algo_wiki(){
 /*Pour se rappeler du signe de l'arête: on regarde que le signe de 0 à 1 ehe*/
 
 int main(){
-    //test_conversion();
+    test_conversion();
     //test_precalcul();
     //test_algo_wiki();
 
@@ -1513,15 +1523,15 @@ int main(){
     // printf("Resultat final:\n");
     // print_graphe_comb_final(g);
 
-    int seq[7] = {5, 7, 4, 6, 1, 3, 2};
-    seq_dt noeud = {.taille = 7, .seq = seq};
-    graphe g = BoyerMyrvold(noeud);
-    printf("Resultat final:\n");
-    fflush(stdout);
-    print_res_BM(g);
+    // int seq[6] = {3, -6, 1, 4, -2, -5};
+    // seq_dt noeud = {.taille = 6, .seq = seq};
+    // graphe g = BoyerMyrvold(noeud);
+    // printf("Resultat final:\n");
+    // fflush(stdout);
+    // print_res_BM(g);
 
 
-    printf("\nok!\n");
-    fflush(stdout);
+    // printf("\nok!\n");
+    // fflush(stdout);
     return 0;
 }
