@@ -80,16 +80,41 @@ double_liste* postinsertion(double_liste* lst, int x){ //insere en queue de list
 };
 
 double_liste* suppression(double_liste* lst){ //Supprime le 1er élément
-    if(lst->prec == lst) {
-        free(lst);
-        return NULL;
-    }
+    assert(lst != NULL);
+	if (lst->prec == lst || lst->suiv == lst) {
+		assert(lst->prec == lst);
+		assert(lst->suiv == lst);
+
+		free(lst);
+		//printf("A renvoye NULL\n");
+		return NULL;
+	}
     lst->prec->suiv = lst->suiv;
     lst->suiv->prec = lst->prec;
     double_liste* res = lst->suiv;
     free(lst);
     return res;
 };
+
+//Verification A FAIRE: supprimer
+void check_list(double_liste* lst)
+{
+    if (lst == NULL)
+        return;
+
+    double_liste* cur = lst;
+
+    do {
+        assert(cur->suiv != NULL);
+        assert(cur->prec != NULL);
+
+        assert(cur->suiv->prec == cur);
+        assert(cur->prec->suiv == cur);
+
+        cur = cur->suiv;
+
+    } while (cur != lst);
+}
 
 //Graphe d'entrée
 struct graphe{
@@ -287,11 +312,13 @@ void print_face_ext(graphe_comb g, lieu_adjacence l, int s){
 void print_aretes_ext(graphe_comb g, lieu_adjacence l, int s){
     char lieu0, lieu1;
     if(l == dansS){
+		if(g.S[s].adj[0].index == -1) return;
         if(g.A[g.A[g.S[s].adj[0].index].jumelle].voisin.lieu == dansS) lieu0 = 'S'; else lieu0 = 'R';
         if(g.A[g.A[g.S[s].adj[1].index].jumelle].voisin.lieu == dansS) lieu1 = 'S'; else lieu1 = 'R';
         printf("(%d, %d %c) <- %d -> (%d, %d %c) ", g.S[s].adj[0].index, g.A[g.A[g.S[s].adj[0].index].jumelle].voisin.index, lieu0, 
             s, g.S[s].adj[1].index, g.A[g.A[g.S[s].adj[1].index].jumelle].voisin.index, lieu1);
     } else if(l == dansR){
+		if(g.R[s].lien[0].index == -1) return;
         if(g.A[g.A[g.R[s].lien[0].index].jumelle].voisin.lieu == dansS) lieu0 = 'S'; else lieu0 = 'R';
         if(g.A[g.A[g.R[s].lien[1].index].jumelle].voisin.lieu == dansS) lieu1 = 'S'; else lieu1 = 'R';
         printf("(%d, %d %c) <- %d -> (%d, %d %c) ", g.R[s].lien[0].index, g.A[g.A[g.R[s].lien[0].index].jumelle].voisin.index, lieu0, 
@@ -395,7 +422,7 @@ void print_graphe_comb_final(graphe_comb g){
         }
     }
     //print_aretes(g, dansR, 1);
-    printf("\n");
+    printf("\n\n");
 }
 
 //Precalcul
@@ -553,16 +580,18 @@ graphe simplifier_graphe(graphe g){
         for(int j=0; j<4; j++){
             if(adj[s][(j+3)%4] != adj[adj[s][j]][2]) {
                 adj[adj[s][j]][1] = adj[s][(j+3)%4];
+				types[adj[s][j]][1] = -1;
             } else{
                 adj[adj[s][j]][1] = -1;
+				types[adj[s][j]][1] = 0;
             }
             if(adj[s][(j+1)%4] != adj[adj[s][j]][2]) {
                 adj[adj[s][j]][3] = adj[s][(j+1)%4];
+				types[adj[s][j]][3] = -1;
             } else {
                 adj[adj[s][j]][3] = -1;
+				types[adj[s][j]][3] = 0;
             }
-            types[adj[s][j]][1] = -1;
-            types[adj[s][j]][3] = -1;
         }
         // printf("Fini sommet %d\n", s);
         // fflush(stdout);
@@ -690,7 +719,7 @@ void tri_enfants_DFS(graphe_comb* gtilde, int s){
         }
     }
 }
-//Normalement marche
+//Heap buffer overflow
 void precalcul(graphe g, graphe_comb *gtilde){
     /*Modifie gtilde précédemment initialisé: (g est le graphe simplifié déjà parcouru)
         - calcule le parent DFS de chaque sommet
@@ -698,6 +727,7 @@ void precalcul(graphe g, graphe_comb *gtilde){
         - calcule les points_min des sommets
         - donne les enfants DFS des sommets*/
     print_tab(g.DFI, g.n);
+	printf("g.n: %d\n", g.n);
     //Reporte l'indice DFI et le type
     for(int s = 0; s<g.n; s++){ 
         gtilde->S[s].DFI = g.indices_DFI[s];
@@ -708,9 +738,10 @@ void precalcul(graphe g, graphe_comb *gtilde){
     // fflush(stdout);
 
     //Calcul de l'ancêtre direct de plus petit indice et DFI
-    for(int i = 0; i<g.n; i++){
-        int s = g.DFI[i];
+    for(int s = 0; s<g.n; s++){
         for(int v = 0; v<4; v++){
+			assert(g.type[s][v] == 0 || g.adj[s][v] > -1);
+			assert(g.adj[s][v] < g.n);
             if( g.type[s][v] < 0 && gtilde->S[g.adj[s][v]].DFI < gtilde->S[s].petit_ancetre){ //Arete retour et DFI plus petit
                 gtilde->S[s].petit_ancetre = gtilde->S[g.adj[s][v]].DFI;
             }
@@ -726,7 +757,9 @@ void precalcul(graphe g, graphe_comb *gtilde){
                 //printf("trouve un parent\n");
                 int parent = g.adj[s][v];
                 gtilde->S[s].parentDFS = parent;
+				check_list(gtilde->S[parent].enfantsDFS);
                 gtilde->S[parent].enfantsDFS = preinsertion(gtilde->S[parent].enfantsDFS, s);
+				check_list(gtilde->S[parent].enfantsDFS);
                 gtilde->S[s].p_parentDFS = gtilde->S[parent].enfantsDFS;
             }
         }
@@ -787,8 +820,16 @@ void montee(graphe_comb* gtilde, int w, int v){
             int p = gtilde->S[c].parentDFS;
             // printf("c: %d, p: %d\n\n", c, p);
             if(p != v){ //On continue la remontée
-                if(gtilde->S[c].point_min < gtilde->S[v].DFI) gtilde->S[p].racines_pertinentes = preinsertion(gtilde->S[p].racines_pertinentes, c);
-                else gtilde->S[p].racines_pertinentes = postinsertion(gtilde->S[p].racines_pertinentes, c);
+				if(! gtilde->R[c].pertinence){
+					if(gtilde->S[c].point_min < gtilde->S[v].DFI){
+						gtilde->S[p].racines_pertinentes = preinsertion(gtilde->S[p].racines_pertinentes, c);
+						gtilde->R[c].pertinence = gtilde->S[p].racines_pertinentes ;
+					}
+					else {
+						gtilde->S[p].racines_pertinentes = postinsertion(gtilde->S[p].racines_pertinentes, c);
+						gtilde->R[c].pertinence = gtilde->S[p].racines_pertinentes->prec;
+					}
+				}
                 x = gtilde->A[gtilde->S[p].adj[0].index];
                 y = gtilde->A[gtilde->S[p].adj[1].index];
                 entree_x = 0;
@@ -823,7 +864,7 @@ void fusion_compo_biconnexes(graphe_comb* gtilde){
     int r = top(gtilde->P);
     gtilde->P = pop(gtilde->P);
     if(entree_r == sortie_rc){ //on a la garantie que les sommets traversés ne sont pas ext actifs
-        printf("\n---On a inverse le sens:\n");
+        printf("\n---On a inverse le sens\n");
         fflush(stdout);
         //On inverse le sens de la liste des demi-arêtes de rc
         int temp = gtilde->R[rc].lien[0].index;
@@ -850,7 +891,7 @@ void fusion_compo_biconnexes(graphe_comb* gtilde){
         }
         gtilde->A[pos].type = -1;
         sortie_rc = 1 - sortie_rc;
-        print_graphe_comb_final(*gtilde);
+        //print_graphe_comb_final(*gtilde);
     }
     
     //On fusionne les composantes biconnexes, et on supprime le sommet racine
@@ -864,10 +905,15 @@ void fusion_compo_biconnexes(graphe_comb* gtilde){
         pos = gtilde->A[pos].adj[1].index;
     }
     //printf("redirection ok\n");fflush(stdout);
-
-    //On ne retire pas rc des racines pertinentes de r car deja fait dans la descente
+	//On retire rc des racines pertinentes de r
+	gtilde->S[r].racines_pertinentes = suppression(gtilde->R[rc].pertinence);
+    gtilde->R[rc].pertinence = NULL;
     //On retire c de la liste des enfants DFS de r
+	printf("parent: %d, enfant a retirer: %d\n", r, rc);
+	check_list(gtilde->S[rc].p_parentDFS);
     gtilde->S[r].enfantsDFS = suppression(gtilde->S[rc].p_parentDFS);
+	gtilde->S[rc].p_parentDFS = NULL;
+	check_list(gtilde->S[r].enfantsDFS);
 
     //Enfin, on fusionne les listes d'adjacence dans le bon ordre 
     lien_adjacence rin = gtilde->S[r].adj[entree_r];
@@ -1055,7 +1101,7 @@ void descente(graphe_comb* gtilde, int c){
             sommet sw = gtilde->S[w.voisin.index];
 
             if(sw.flag_arete_retour == v){ //On a trouvé une arete retour à ajouter
-                printf("On doit ajouter arete retour\n");
+                printf("On doit ajouter arete retour v%d, %d\n", c, w.voisin.index);
                 while(gtilde->P != NULL){
                     fusion_compo_biconnexes(gtilde);
                     //print_graphe_comb_final(*gtilde);
@@ -1068,13 +1114,12 @@ void descente(graphe_comb* gtilde, int c){
 
             if(sw.racines_pertinentes != NULL){
                 //On doit push w et entree w
-                printf("Racines pertinentes trouvees: %d\n", w.voisin.index);fflush(stdout);
+                printf("Racines pertinentes trouvees: %d -> %d\n", w.voisin.index, sw.racines_pertinentes->val);fflush(stdout);
                 gtilde->P = push(gtilde->P, w.voisin.index);
                 gtilde->P = push(gtilde->P, entree_w);
                 //On continue de descendre: wc est le suivant
                 int swc = sw.racines_pertinentes->val; //Premier élément des racines pertinentes (sommet)
-                gtilde->S[w.voisin.index].racines_pertinentes = suppression(gtilde->S[w.voisin.index].racines_pertinentes); //Pas dans le papier original, source éventuelle de bug
-                demi_arete x = gtilde->A[gtilde->R[swc].lien[1].index]; int entree_x = 1; 
+				demi_arete x = gtilde->A[gtilde->R[swc].lien[1].index]; int entree_x = 1; 
                 demi_arete y = gtilde->A[gtilde->R[swc].lien[0].index]; int entree_y = 0;
                 printf("swc: %d\n",swc);fflush(stdout);
                 successeur_face_ext(*gtilde, &x, &entree_x);
@@ -1282,8 +1327,8 @@ graphe_comb BoyerMyrvold(seq_dt seq){
                 montee(&gtilde, w, v); 
             }
         }
-        // printf("Fin des montees: \n");
-        // print_graphe_comb_final(gtilde);
+        printf("----------------- Fin des montees: \n");
+        print_graphe_comb_final(gtilde);
 
         //Pour chaque enfant de v
         debut = gtilde.S[v].enfantsDFS;
@@ -1571,7 +1616,7 @@ void test_algo_wiki(){
 
 /*Pour se rappeler du signe de l'arête: on regarde que le signe de 0 à 1 ehe*/
 /*A FAIRE (par ordre de prio)
-Le parcours des aretes: vérifier que les aretes -1 ne posent pas de pbs
+JE SAIS: utiliser le champ pertinence pour savoir si un sommet-racine est pertinent pour ne pas l'ajouter 2 fois
 Changer le truc des liens/lieu d'adjacence c'est ridicule un peu*/
 int main(){
     //test_conversion();
