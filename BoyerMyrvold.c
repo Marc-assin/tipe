@@ -419,6 +419,9 @@ void print_graphe_comb_final(graphe_comb g){
             print_aretes(g, dansR, i);
             printf("Aretes face exterieure: ");
             print_aretes_ext(g, dansR, i);
+			printf("Pertinence: ");
+			if(g.R[i].pertinence == NULL) printf("NULL\n");
+			else printf("pertinent\n");
         }
     }
     //print_aretes(g, dansR, 1);
@@ -683,7 +686,7 @@ void precalcul_graphe(graphe* g){
     free(vus);
 }
 
-void tri_enfants_DFS(graphe_comb* gtilde, int s){
+void tri_enfants_DFS_broken(graphe_comb* gtilde, int s){
     /*Tri de la liste (à au plus 4 éléments) des enfants DFS d'un sommet*/
     // printf("tri enfants de %d\n", s);
     // fflush(stdout);
@@ -698,6 +701,7 @@ void tri_enfants_DFS(graphe_comb* gtilde, int s){
                 pos->val = tmp;
                 gtilde->S[depart->val].p_parentDFS = pos;
                 gtilde->S[pos->val].p_parentDFS = depart;
+				
             }
             pos = pos->suiv;
         }
@@ -719,7 +723,36 @@ void tri_enfants_DFS(graphe_comb* gtilde, int s){
         }
     }
 }
-//Heap buffer overflow
+
+void tri_enfants_DFS(graphe_comb* gtilde, int s){
+	/*Tri de la liste (à au plus 4 éléments) des enfants DFS d'un sommet par insertion*/
+	if(gtilde->S[s].enfantsDFS != NULL){
+		double_liste* tete = NULL;
+		while(gtilde->S[s].enfantsDFS){
+			//On prend le plus petit point_min parmi la liste
+			int m = -1;
+			double_liste* plus_petit;
+			double_liste* pos = gtilde->S[s].enfantsDFS;
+			while(m == -1 || pos != gtilde->S[s].enfantsDFS){
+				if(m == -1 || gtilde->S[pos->val].point_min < m){
+					m = gtilde->S[pos->val].point_min;
+					plus_petit = pos;
+				}
+				pos = pos->suiv;
+			}
+			//On le copie dans la nouvelle liste
+			tete = postinsertion(tete, plus_petit->val);
+			gtilde->S[plus_petit->val].p_parentDFS = tete->prec;
+			//On le supprime de la liste
+			gtilde->S[s].enfantsDFS = suppression(plus_petit);
+		}
+		//On remplace la liste
+		gtilde->S[s].enfantsDFS = tete;
+	}
+}
+
+
+//Marche
 void precalcul(graphe g, graphe_comb *gtilde){
     /*Modifie gtilde précédemment initialisé: (g est le graphe simplifié déjà parcouru)
         - calcule le parent DFS de chaque sommet
@@ -820,10 +853,10 @@ void montee(graphe_comb* gtilde, int w, int v){
             int p = gtilde->S[c].parentDFS;
             // printf("c: %d, p: %d\n\n", c, p);
             if(p != v){ //On continue la remontée
-				if(! gtilde->R[c].pertinence){
+				if(gtilde->R[c].pertinence == NULL){
 					if(gtilde->S[c].point_min < gtilde->S[v].DFI){
 						gtilde->S[p].racines_pertinentes = preinsertion(gtilde->S[p].racines_pertinentes, c);
-						gtilde->R[c].pertinence = gtilde->S[p].racines_pertinentes ;
+						gtilde->R[c].pertinence = gtilde->S[p].racines_pertinentes;
 					}
 					else {
 						gtilde->S[p].racines_pertinentes = postinsertion(gtilde->S[p].racines_pertinentes, c);
@@ -911,7 +944,12 @@ void fusion_compo_biconnexes(graphe_comb* gtilde){
     //On retire c de la liste des enfants DFS de r
 	printf("parent: %d, enfant a retirer: %d\n", r, rc);
 	check_list(gtilde->S[rc].p_parentDFS);
+	printf("Avant suppression:\n");
+	print_list(gtilde->S[r].enfantsDFS);
+	printf("Cellule pointee: %d\n", gtilde->S[rc].p_parentDFS->val);
     gtilde->S[r].enfantsDFS = suppression(gtilde->S[rc].p_parentDFS);
+	printf("Après suppression: \n");
+	print_list(gtilde->S[r].enfantsDFS);
 	gtilde->S[rc].p_parentDFS = NULL;
 	check_list(gtilde->S[r].enfantsDFS);
 
@@ -964,7 +1002,11 @@ bool actif_interne(graphe_comb gtilde, int v, int s){
 
 void ajout_arete_retour(graphe_comb* gtilde, int c, int dir, int w, int entree_w){
     //printf("On a %d aretes\n", gtilde->m);
-
+	FILE *f = fopen("aretes.txt", "a");
+	fprintf(f, "arete vc: %d, w: %d\n", c, w);
+	fclose(f);
+	
+	
     //On ajoute la demi arete incidente à vc
     gtilde->A[gtilde->m].adj[dir].lieu = dansA;
     gtilde->A[gtilde->m].adj[1-dir].lieu = dansA;
@@ -1229,6 +1271,9 @@ void DFS_final(graphe_comb gtilde, bool* vus, graphe* res, int* orientation, int
 }
 
 graphe extraction_BM(graphe_comb gtilde){
+	/*A partir du graphe combinatoire renvoyé par BM, donne un graphe où
+	 - Les aretes virtuelles ont été supprimées
+	 - */
     graphe res;
     res.n = gtilde.n;
     res.adj = malloc(res.n*sizeof(int*));
@@ -1288,6 +1333,7 @@ graphe_comb BoyerMyrvold(seq_dt seq){
             gtilde.R[c].lien[0].index = gtilde.m;
             gtilde.R[c].lien[1].lieu = dansA;
             gtilde.R[c].lien[1].index = gtilde.m;
+			gtilde.R[c].pertinence = NULL;
             //On ajoute l'arête de parcours (vc, c) comme 2 demi-arêtes
             gtilde.A[gtilde.m].adj[0].lieu = dansA;
             gtilde.A[gtilde.m].adj[0].index = gtilde.m; //indique la demi-arete précédente, il n'y en a pas: c'est elle-même
@@ -1324,6 +1370,7 @@ graphe_comb BoyerMyrvold(seq_dt seq){
         for(int j = 0; j<4; j++){
             if(g_simple.type[v][j] < 0 && gtilde.S[g_simple.adj[v][j]].DFI > gtilde.S[v].DFI){ //Si arete retour et descendant
                 int w = g_simple.adj[v][j];
+				printf("Montee depuis %d\n", w);
                 montee(&gtilde, w, v); 
             }
         }
@@ -1616,13 +1663,15 @@ void test_algo_wiki(){
 
 /*Pour se rappeler du signe de l'arête: on regarde que le signe de 0 à 1 ehe*/
 /*A FAIRE (par ordre de prio)
-JE SAIS: utiliser le champ pertinence pour savoir si un sommet-racine est pertinent pour ne pas l'ajouter 2 fois
+La conversion finale
 Changer le truc des liens/lieu d'adjacence c'est ridicule un peu*/
 int main(){
     //test_conversion();
     //test_precalcul();
     //test_algo_wiki();
-
+	FILE* f = fopen("aretes.txt", "w");
+	fprintf(f, "Aretes:\n");
+	fclose(f);
     int seq[6] = {3, (-6), 1, 4, (-2), (-5)};
     seq_dt noeud_wiki = {.taille = 6, .seq = seq};
     graphe_comb g = BoyerMyrvold(noeud_wiki);
