@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 3 3" stroke="blue" stroke-width="0.008" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 3 3" stroke="blue" stroke-width="0.008000" fill="none">
 <path d="M 1.890969 1.275255 A 0.687967 0.687967 0 0 1 1.755493 1.013534"/>
 <path d="M 1.755493 1.013534 A 0.090573 0.090573 0 0 0 1.819537 0.949490"/>
 <path d="M 1.819537 0.949490 A 0.187769 0.187769 0 0 1 1.890969 1.275255"/>
@@ -11,4 +11,16 @@
 <path d="M 1.732051 0.972932 A 0.090573 0.090573 0 0 1 1.755493 1.013534"/>
 <path d="M 1.573132 0.724745 A 1.141281 1.141281 0 0 0 0.866025 1.500000"/>
 <path d="M 0.866025 1.500000 A 0.590770 0.590770 0 1 1 1.573132 0.724745"/>
+<path d="M 1.817467 0.957217 L 1.821608 0.941762" stroke-width="0.024000" stroke="white"/>
+<path d="M 1.817467 0.957217 L 1.821608 0.941762" stroke-width="0.008000" stroke="blue"/>
+<path d="M 1.897121 1.270141 L 1.884817 1.280369" stroke-width="0.024000" stroke="white"/>
+<path d="M 1.897121 1.270141 L 1.884817 1.280369" stroke-width="0.008000" stroke="blue"/>
+<path d="M 0.868096 1.492273 L 0.863955 1.507727" stroke-width="0.024000" stroke="white"/>
+<path d="M 0.868096 1.492273 L 0.863955 1.507727" stroke-width="0.008000" stroke="blue"/>
+<path d="M 1.570361 0.717240 L 1.575903 0.732250" stroke-width="0.024000" stroke="white"/>
+<path d="M 1.570361 0.717240 L 1.575903 0.732250" stroke-width="0.008000" stroke="blue"/>
+<path d="M 1.726394 0.978588 L 1.737708 0.967275" stroke-width="0.024000" stroke="white"/>
+<path d="M 1.726394 0.978588 L 1.737708 0.967275" stroke-width="0.008000" stroke="blue"/>
+<path d="M 1.753422 1.005807 L 1.757563 1.021262" stroke-width="0.024000" stroke="white"/>
+<path d="M 1.753422 1.005807 L 1.757563 1.021262" stroke-width="0.008000" stroke="blue"/>
 </svg>
