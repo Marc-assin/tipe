@@ -283,3 +283,5 @@ void test_regle1(){
     printf("%s\n", regle1(&s)==false?"correct":"faux");
     free_seq_dt(&s);
 }
+
+
