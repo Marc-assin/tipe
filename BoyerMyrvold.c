@@ -650,8 +650,8 @@ graphe_comb init_graphe_comb(graphe g){
     return newg;
 }
 
-//Debuggé
-void DFS(graphe* g, bool* vus, int s, int* index){
+
+void DFS(graphe* g, bool* vus, int s, int* index, double_liste** arbre_DFS){
     /*Le DFS:   donne un index DFI a chaque sommet
                 trie les aretes en aretes retour/aretes de parcours
     */
@@ -661,9 +661,10 @@ void DFS(graphe* g, bool* vus, int s, int* index){
     g->indices_DFI[s] = *index;
     g->DFI[(*index)++] = s;
     for(int i = 0; i<4; i++){
-        if(g->adj[s][i] > -1 && !vus[g->adj[s][i]]){
+        if(g->adj[s][i] > -1 && !vus[g->adj[s][i]]){ //On continue
+            arbre_DFS[s] = postinsertion(arbre_DFS[s], g->adj[s][i]);
             g->type[s][i] = 1;
-            DFS(g,vus,g->adj[s][i], index);
+            DFS(g,vus,g->adj[s][i], index, arbre_DFS);
         } else if (g->adj[s][i] > -1){ 
             //on identifie l'arête correspondante et on match son type
             for(int j = 0; j<4; j++){
@@ -672,18 +673,22 @@ void DFS(graphe* g, bool* vus, int s, int* index){
         }
     }
 }
-//Debuggé
-void precalcul_graphe(graphe* g){
+
+double_liste** precalcul_graphe(graphe* g){
     /* Prend un graphe g simplifié ayant été extrait d'une sequence DT, et utilise un DFS pour:
     - donner un ordre DFS aux sommets
-    - trier les aretes de parcours ou de retour*/
+    - trier les aretes de parcours ou de retour
+    - renvoyer l'arbre DFS*/
     bool* vus = malloc(g->n*sizeof(bool));
+    double_liste** arbre_DFS = malloc(g->n*sizeof(double_liste*));
     for(int i = 0; i<g->n; i++){
         vus[i] = false;
+        arbre_DFS[i] = NULL;
     }
     int index = 0;
-    DFS(g, vus, 0, &index);
+    DFS(g, vus, 0, &index, arbre_DFS);
     free(vus);
+    return arbre_DFS;
 }
 
 void tri_enfants_DFS_broken(graphe_comb* gtilde, int s){
@@ -854,7 +859,7 @@ void montee(graphe_comb* gtilde, int w, int v){
             // printf("c: %d, p: %d\n\n", c, p);
             if(p != v){ //On continue la remontée
 				if(gtilde->R[c].pertinence == NULL){
-					if(gtilde->S[c].point_min < gtilde->S[v].DFI){
+					if(gtilde->S[c].point_min >= gtilde->S[v].DFI){ //Je viens de changer ça
 						gtilde->S[p].racines_pertinentes = preinsertion(gtilde->S[p].racines_pertinentes, c);
 						gtilde->R[c].pertinence = gtilde->S[p].racines_pertinentes;
 					}
@@ -918,7 +923,7 @@ void fusion_compo_biconnexes(graphe_comb* gtilde){
         } //pos est arrivée à la fin
         //printf("sorti du premier while\n"); fflush(stdout);
 
-        //On change le signe de l'arête entre (rc et c)
+        //On change le signe de p: la composante en-dessous est à retourner
         while( gtilde->A[gtilde->A[pos].jumelle].voisin.index != rc){ //Ici, c = rc à cause de la manière dont on stocke les sommets racines
             pos = gtilde->A[pos].adj[1].index;
         }
@@ -1106,12 +1111,25 @@ void ajout_arete_raccourci(graphe_comb* gtilde, int c, int dir, int w, int entre
     (gtilde->m)++;
 }
 
+void successeur_face_ext_actif(graphe_comb gtilde, demi_arete* w, int* entree_w, int v){
+    /*w est la demi-arête d'où l'on est entré sur x, du côté entree_w
+    v est le sommet duquel on fait la descente*/
+    /*On cherche le prochain sommet pertinent ou stoppant sur la face extérieure*/
+    successeur_face_ext(gtilde, w, entree_w); //on quitte le sommet-racine
+    int x = w->voisin.index; //forcément réel
+    while (inactif(gtilde, v, x)){
+        assert(w->voisin.lieu == dansS);
+        successeur_face_ext(gtilde, w, entree_w);
+    }
+}
+
 void descente(graphe_comb* gtilde, int c){
     printf("-----Descente depuis v%d:\n\n", c);
     //c est l'enfant d'où part la descente
 
     sommet_racine vc = gtilde->R[c];
     int v = vc.parent;
+
     //On vide la pile
     while (gtilde->P != NULL){
         gtilde->P = pop(gtilde->P);
@@ -1164,8 +1182,8 @@ void descente(graphe_comb* gtilde, int c){
 				demi_arete x = gtilde->A[gtilde->R[swc].lien[1].index]; int entree_x = 1; 
                 demi_arete y = gtilde->A[gtilde->R[swc].lien[0].index]; int entree_y = 0;
                 printf("swc: %d\n",swc);fflush(stdout);
-                successeur_face_ext(*gtilde, &x, &entree_x);
-                successeur_face_ext(*gtilde, &y, &entree_y);
+                successeur_face_ext_actif(*gtilde, &x, &entree_x, v); 
+                successeur_face_ext_actif(*gtilde, &y, &entree_y, v);
 
                 printf("Successeurs face ext: x: %d, y: %d\n", x.voisin.index, y.voisin.index);
 
@@ -1210,12 +1228,14 @@ void descente(graphe_comb* gtilde, int c){
     }
 }
 
-void DFS_final(graphe_comb gtilde, bool* vus, graphe* res, int* orientation, int s){
+void DFS_final(graphe_comb gtilde, graphe* res, int orientation, int s, double_liste** arbre_DFS){
+    /*  arbre_DFS: tableau contenant des listes chainées des enfants DFS du graphe de base
+        associations: tableau contenant les associations de sommets-arêtes correspondant à la même arête*/
     //N'emprunte que des arêtes du premier DFS
-    if(!vus[s]){
-        vus[s] = true;
+    
+    if(gtilde.S[s].type == 0){
         //Recopie des arêtes réelles
-        if(*orientation >0){
+        if(orientation >0){
             res->adj[s] = malloc(4*sizeof(int));
             int i = 0;
             int w = gtilde.S[s].adj[0].index;
@@ -1252,37 +1272,40 @@ void DFS_final(graphe_comb gtilde, bool* vus, graphe* res, int* orientation, int
                 w = gtilde.A[w].adj[0].index;
             }
         }
-        //On passe au suivant
-        int signe_sommet = *orientation;
-        int w = gtilde.S[s].adj[0].index;
-        if(gtilde.A[w].type != 0){
-            *orientation = signe_sommet*gtilde.A[w].type;
-            DFS_final(gtilde, vus, res, orientation, gtilde.A[gtilde.A[w].jumelle].voisin.index);
-        }
-        w = gtilde.A[w].adj[1].index;
-        while(w != gtilde.S[s].adj[0].index){
-            if(gtilde.A[w].type != 0){
-                *orientation = signe_sommet*gtilde.A[w].type;
-                DFS_final(gtilde, vus, res, orientation, gtilde.A[gtilde.A[w].jumelle].voisin.index);
-            }
-            w = gtilde.A[w].adj[1].index;
-        }
+    }
+    //On passe au suivant
+    int signe_sommet = gtilde.S[s].signe*orientation;
+    while(arbre_DFS[s] != NULL){
+        int suivant = arbre_DFS[s]->val;
+        arbre_DFS[s] = suppression(arbre_DFS[s]);
+        DFS_final(gtilde, res, signe_sommet, suivant, arbre_DFS);
     }
 }
 
-graphe extraction_BM(graphe_comb gtilde){
-	/*A partir du graphe combinatoire renvoyé par BM, donne un graphe où
-	 - Les aretes virtuelles ont été supprimées
-	 - */
+graphe extraction_BM(graphe_comb gtilde, graphe g_simple, double_liste** arbre_DFS, int* associations){
+	/*  arbre_DFS: tableau contenant des listes chainées des enfants DFS du graphe de base
+        associations: tableau contenant les associations de sommets-arêtes correspondant à la même arête
+    A partir du graphe combinatoire renvoyé par BM, donne un graphe où
+	 - Seuls les sommets des croisements restent
+     - Les arêtes sont dans l'ordre autour des sommets*/
     graphe res;
-    res.n = gtilde.n;
+    res.n = gtilde.n/5;
     res.adj = malloc(res.n*sizeof(int*));
     int orientation = 1;
-    bool* vus = malloc(gtilde.n*sizeof(bool));
-    for(int i=0; i<gtilde.n; i++){
-        vus[i] = false;
+    DFS_final(gtilde, &res, &orientation, 0, arbre_DFS);
+
+    //On cherche à raccorder les demi-arêtes
+    for(int s=0; s<res.n; s++){
+        for(int j = 0; j<4; j++){
+            int k = res.adj[s][j];
+            if(g_simple.type[k][2] != 0){
+                res.adj[s][j] = g_simple.adj[associations[k]][0];
+            } else { //On est une arête double, on prend le même voisin que notre doublon
+                res.adj[s][j] = g_simple.adj[associations[associations[k]]][0];
+            }
+        }
     }
-    DFS_final(gtilde, vus, &res, &orientation, 0);
+
     return res;
 }
 
@@ -1300,7 +1323,7 @@ graphe_comb BoyerMyrvold(seq_dt seq){
     printf("Fini simplification\n");
     //print_graphe_simple(g_simple);
     fflush(stdout);
-    precalcul_graphe(&g_simple);
+    double_liste** arbre_DFS = precalcul_graphe(&g_simple);
     printf("Fini dfs\n");
     fflush(stdout);
     //Initialisation du graphe combinatoire
@@ -1423,6 +1446,9 @@ graphe_comb BoyerMyrvold(seq_dt seq){
     }
     printf("Fini le sommet 0\n");
     fflush(stdout);
+
+    printf("Resultat final:\n");
+    print_graphe_comb_final(gtilde);
 
     //A FAIRE Tout libérer
     return gtilde;

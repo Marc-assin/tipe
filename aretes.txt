@@ -3,12 +3,12 @@ arete vc: 13, w: 22
 arete vc: 13, w: 23
 arete vc: 3, w: 23
 arete vc: 3, w: 13
-arete vc: 25, w: 21
 arete vc: 25, w: 19
-arete vc: 4, w: 21
+arete vc: 25, w: 21
 arete vc: 4, w: 19
-arete vc: 28, w: 29
+arete vc: 4, w: 21
 arete vc: 28, w: 27
+arete vc: 28, w: 29
 arete vc: 5, w: 29
 arete vc: 5, w: 27
 arete vc: 17, w: 18
@@ -17,8 +17,8 @@ arete vc: 16, w: 7
 arete vc: 1, w: 16
 arete vc: 1, w: 7
 arete vc: 15, w: 21
-arete vc: 20, w: 15
 arete vc: 20, w: 11
+arete vc: 20, w: 15
 arete vc: 2, w: 15
 arete vc: 2, w: 11
 arete vc: 8, w: 11
