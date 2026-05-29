@@ -122,7 +122,6 @@ struct graphe{
     int** signes; //tableau indiquant si l'arête passe au-dessus (>0), en-dessous (<0), ou 0 si entre deux sommet-arete
     //données pour les graphes simplifiés:
     int** type; //tableau indiquant si l'arête est une arete directe (>0) ou retour (<0)
-    int* type_sommet; //Indique si le sommet représente: un sommet = 0, une arete simple = 1, une arete double = 2 
     int* DFI; //tableau indiquant l'ordre du DFS: les sommets dans l'ordre
     int* indices_DFI; //L'indice DFI de chaque sommet
 };
@@ -144,7 +143,6 @@ struct lien_adjacence{
 typedef struct lien_adjacence lien_adjacence;
 
 struct sommet{
-    int type; //Sommet réel = 0, sommet-arete simple = 1, double = 2
     int signe; //Doit-on retourner les listes des descendants
     lien_adjacence adj[2]; //tableau de taille 2: relie aux demi arêtes de la face extérieure
     int parentDFS;
@@ -248,7 +246,6 @@ graphe conversion_seqDT(seq_dt s){
     //la case 3 à la continuation du pair 
     adj[0][0] = paires[2*n]/2; //Correspond au numero 2*n
     adj[0][1] = (paires[1]/2-1);
- //   adj[paires[2*n]/2][3] = 0; //Correspond à la continuation du pair 2*n final
     for(int i=1; i<n;i++){
         adj[i][0] = paires[2*i]/2; //Correspond à l'impair entrant
         adj[i][1] = (paires[2*i+1]/2-1); //Correspond au pair entrant
@@ -268,23 +265,21 @@ graphe conversion_seqDT(seq_dt s){
     return res;
 };
 
-//Debuggé
 graphe simplifier_graphe(graphe g, int* associations){
     /*Prend un graphe de noeud
     Ajoute deux sommets pour chaque arête
-    Met des aretes entre: 
-     - une arete et le sommet qu'elle relie
-     - deux sommets correspondant à la même arete
+    Met des arêtes entre: 
+     - une arête et le sommet qu'elle relie
+     - deux sommets correspondant à la même arête
      - des aretes consécutives
-     - retient qui est une arete double
-     - retient le signe d'une arete
-    Resultat contient encore des -1 !
-    Fait des associations entre des sommet-arêtes d'une même arête*/
+     - retient qui est une arête double
+     - retient le signe d'une arête
+    Résultat peut contenir des -1 !
+    Fait des associations entre des sommets-arêtes d'une même arête*/
 
     int** adj = malloc(5*(g.n)*sizeof(int*));
     int* DFI = malloc(5*(g.n)*sizeof(int));
     int** types = malloc(5*(g.n)*sizeof(int*));
-    int* type_sommets = malloc(5*(g.n)*sizeof(int));
     int* indices_DFI = malloc(5*(g.n)*sizeof(int));
     int nb_sommets = g.n;
 
@@ -292,7 +287,6 @@ graphe simplifier_graphe(graphe g, int* associations){
     for(int s = 0; s<g.n; s++){
         adj[s] = malloc(4*sizeof(int));
         types[s] = malloc(4*sizeof(int));
-        type_sommets[s] = 0;
         for(int a = 0; a<4; a++){
             types[s][a] = -1;
         }
@@ -317,10 +311,6 @@ graphe simplifier_graphe(graphe g, int* associations){
                 }
                 //On teste si l'arête n'est pas en réalité double
                 if(j>0 && g.adj[s][j] == g.adj[s][j-1]){
-                    type_sommets[nb_sommets] = -1; //N'est relié à rien
-                    type_sommets[nb_sommets+1] = -1;
-                    type_sommets[adj[s][j-1]] = 2;
-                    type_sommets[adj[adj[s][j-1]][2]] = 2;
                     associations[nb_sommets] = -adj[s][j-1];
                     associations[nb_sommets+1] = -adj[adj[s][j-1]][2];
                     adj[nb_sommets][2] = -1;
@@ -328,10 +318,6 @@ graphe simplifier_graphe(graphe g, int* associations){
                     adj[nb_sommets+1][2] = -1;
                     types[nb_sommets+1][2] = 0;
                 } else if(j>0 && g.adj[s][j] == g.adj[s][0]) {
-                    type_sommets[nb_sommets] = -1; //N'est relié à rien
-                    type_sommets[nb_sommets+1] = -1;
-                    type_sommets[adj[s][0]] = 2;
-                    type_sommets[adj[adj[s][0]][2]] = 2;
                     associations[nb_sommets] = -adj[s][0];
                     associations[nb_sommets+1] = -adj[adj[s][0]][2];
                     adj[nb_sommets][2] = -1;
@@ -339,8 +325,6 @@ graphe simplifier_graphe(graphe g, int* associations){
                     adj[nb_sommets+1][2] = -1;
                     types[nb_sommets+1][2] = 0;
                 } else{ //Il y a réellement une arête à créer
-                    type_sommets[nb_sommets] = 1;
-                    type_sommets[nb_sommets+1] = 1;
                     adj[nb_sommets][2] = nb_sommets+1;
                     types[nb_sommets][2] = -1;
                     adj[nb_sommets+1][2] = nb_sommets;
@@ -393,7 +377,6 @@ graphe simplifier_graphe(graphe g, int* associations){
         .adj = adj,
         .type = types,
         .DFI = DFI,
-        .type_sommet = type_sommets,
         .indices_DFI = indices_DFI
     };
     return res;
@@ -435,7 +418,6 @@ graphe_comb init_graphe_comb(graphe g){
                         .P = P};
     return newg;
 }
-
 
 void DFS(graphe* g, bool* vus, int s, int* index, double_liste** arbre_DFS){
     /*Le DFS:   donne un index DFI a chaque sommet
@@ -538,8 +520,6 @@ void tri_enfants_DFS(graphe_comb* gtilde, int s){
 	}
 }
 
-
-//Marche
 void precalcul(graphe g, graphe_comb *gtilde){
     /*Modifie gtilde précédemment initialisé: (g est le graphe simplifié déjà parcouru)
         - calcule le parent DFS de chaque sommet
@@ -550,7 +530,6 @@ void precalcul(graphe g, graphe_comb *gtilde){
     for(int s = 0; s<g.n; s++){ 
         gtilde->S[s].DFI = g.indices_DFI[s];
         gtilde->S[s].petit_ancetre = g.indices_DFI[s];
-        gtilde->S[s].type = g.type_sommet[s];
     }
 
 
@@ -645,7 +624,6 @@ void montee(graphe_comb* gtilde, int w, int v){
             successeur_face_ext(*gtilde, &y, &entree_y);
         }
     }
-
 }
 
 void fusion_compo_biconnexes(graphe_comb* gtilde){
@@ -721,8 +699,6 @@ void fusion_compo_biconnexes(graphe_comb* gtilde){
     }
     //Petit luxe pour l'affichage: on supprime le sommet virtuel
     gtilde->R[rc].parent = -1;
-
-
 }
 
 bool pertinent(graphe_comb gtilde, int v, int s){
@@ -856,7 +832,6 @@ void successeur_face_ext_actif(graphe_comb gtilde, demi_arete* w, int* entree_w,
 
 void descente(graphe_comb* gtilde, int c){
     //c est l'enfant d'où part la descente
-
     sommet_racine vc = gtilde->R[c];
     int v = vc.parent;
 
@@ -928,7 +903,7 @@ void DFS_final(graphe_comb gtilde, graphe* res, int orientation, int s, double_l
         associations: tableau contenant les associations de sommets-arêtes correspondant à la même arête*/
     //N'emprunte que des arêtes du premier DFS
     int signe_sommet = gtilde.S[s].signe*orientation;
-    if(gtilde.S[s].type == 0){
+    if(s < gtilde.n/5){
         //Recopie des arêtes réelles
         if(signe_sommet > 0){
             res->adj[s] = malloc(4*sizeof(int));
@@ -998,7 +973,18 @@ graphe extraction_BM(graphe_comb gtilde, graphe g_simple, double_liste** arbre_D
             }
         }
     }
+    
     return res;
+}
+
+void print_graphe_final(graphe g){
+    for(int i=0; i<g.n; i++){
+        printf("%d: ", i);
+        for(int j = 0; j<4; j++){
+            printf("%d, ", g.adj[i][j]);
+        }
+        printf("\n");
+    }
 }
 
 graphe BoyerMyrvold(seq_dt seq){
@@ -1115,11 +1101,18 @@ graphe BoyerMyrvold(seq_dt seq){
     //A FAIRE Tout libérer
 
     graphe res = extraction_BM(gtilde, g_simple, arbre_DFS, associations);
+    print_graphe_final(res);
     return res;
 }
 
 
 /*Changer le truc des liens/lieu d'adjacence c'est ridicule un peu*/
 int main(){
+    int seq[6] = {3, (-6), 1, 4, (-2), (-5)};
+    seq_dt noeud_wiki = {.taille = 6, .seq = seq};
+    graphe g = BoyerMyrvold(noeud_wiki);
+    
+    printf("\nok!\n");
+    fflush(stdout);
     return 0;
 }
