@@ -652,6 +652,7 @@ graphe_comb init_graphe_comb(graphe g){
         sommets[i].racines_pertinentes = NULL;
         sommets[i].enfantsDFS = NULL;
         sommets[i].p_parentDFS = NULL;
+		sommets[i].signe = 1;
         R[i].parent = -1;
     }
     for(int i=0; i<g.n; i++){
@@ -1306,8 +1307,7 @@ graphe extraction_BM(graphe_comb gtilde, graphe g_simple, double_liste** arbre_D
     graphe res;
     res.n = gtilde.n/5;
     res.adj = malloc(res.n*sizeof(int*));
-    int orientation = 1;
-    DFS_final(gtilde, &res, &orientation, 0, arbre_DFS);
+    DFS_final(gtilde, &res, 1, 0, arbre_DFS);
 
     //On cherche à raccorder les demi-arêtes
     for(int s=0; s<res.n; s++){
@@ -1323,7 +1323,7 @@ graphe extraction_BM(graphe_comb gtilde, graphe g_simple, double_liste** arbre_D
     return res;
 }
 
-graphe_comb BoyerMyrvold(seq_dt seq){
+graphe BoyerMyrvold(seq_dt seq){
     /*Prend une séquence DT et renvoie le graphe combinatoire après exécution de l'algo de Boyer Myrvold*/
         //Precalcul
     //Transformation en un graphe
@@ -1469,7 +1469,7 @@ graphe_comb BoyerMyrvold(seq_dt seq){
     printf("Extraction:\n");
     graphe res = extraction_BM(gtilde, g_simple, arbre_DFS, associations);
     print_graphe_final(res);
-    return gtilde;
+    return res;
 }
 
 //Fonctions de test
@@ -1721,15 +1721,7 @@ int main(){
 	fclose(f);
     int seq[6] = {3, (-6), 1, 4, (-2), (-5)};
     seq_dt noeud_wiki = {.taille = 6, .seq = seq};
-    graphe_comb g = BoyerMyrvold(noeud_wiki);
-
-    // int seq[6] = {3, -6, 1, 4, -2, -5};
-    // seq_dt noeud = {.taille = 6, .seq = seq};
-    // graphe g = BoyerMyrvold(noeud);
-    // printf("Resultat final:\n");
-    // fflush(stdout);
-    // print_res_BM(g);
-
+    graphe g = BoyerMyrvold(noeud_wiki);
 
     printf("\nok!\n");
     fflush(stdout);
