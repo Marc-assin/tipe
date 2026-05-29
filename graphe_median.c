@@ -783,7 +783,7 @@ double phi_prime(int s, double *x, graphe H){
     return sum;
 }
 
-double* calculer_radii(graphe_angles_reduit gar, double coeff_apprentissage, double epsilon){
+double* calculer_rayons(graphe_angles_reduit gar, double coeff_apprentissage, double epsilon){
     graphe H = gar.H;
     int n = H.n;
     int s1 = gar.cycle_exterieur[0], s2 = gar.cycle_exterieur[1], s3 = gar.cycle_exterieur[2];
@@ -837,7 +837,7 @@ double* calculer_radii(graphe_angles_reduit gar, double coeff_apprentissage, dou
 }
 
 // int main(){
-void test_calculer_radii(){
+void test_calculer_rayons(){
     int n = 6;
     voisin **adj = malloc(sizeof(voisin*) * n);
     int *deg = malloc(sizeof(int) * n);
@@ -915,7 +915,7 @@ void test_calculer_radii(){
 
     // afficher_graphe(gar.H);
 
-    double *r = calculer_radii(gar, 0.001, 1e-25);
+    double *r = calculer_rayons(gar, 0.001, 1e-25);
 
     for (int i = 0; i < gar.H.n; i++){
         printf("%lf ", r[i]);
@@ -1276,7 +1276,7 @@ void test_calculer_positions(){
     plongement plongement_gt_triangule = graphe_vers_plongement(gt_triangule);
     afficher_plongement(plongement_gt_triangule);
     graphe_angles_reduit gar = calculer_graphe_angles_reduit(plongement_gt_triangule);
-    double *r = calculer_radii(gar, 0.001, 1e-23);
+    double *r = calculer_rayons(gar, 0.001, 1e-23);
     for (int i = 0; i < 3; i++){
         printf("%d ", gar.cycle_exterieur[i]);
     }
@@ -1335,20 +1335,36 @@ double angle(vec A, vec B, vec C) {
     return angle;
 }
 
-void calculer_svg(vec *pos, double *r, graphe_tait gt, char* filename){
+void dessiner_inter(vec pos, double dir, double stroke_width, FILE *svg){
+    double epsilon = stroke_width;
+    vec e_eps = {epsilon * cos(dir), epsilon * sin(dir)};
+    fprintf(svg, "<path d=\"M %lf %lf L %lf %lf\" stroke-width=\"%lf\" stroke=\"white\"/>\n", pos.x - e_eps.x, pos.y - e_eps.y, pos.x + e_eps.x, pos.y + e_eps.y, stroke_width * 3);
+    fprintf(svg, "<path d=\"M %lf %lf L %lf %lf\" stroke-width=\"%lf\" stroke=\"blue\"/>\n", pos.x - e_eps.x, pos.y - e_eps.y, pos.x + e_eps.x, pos.y + e_eps.y, stroke_width);
+}
+
+void calculer_svg(vec *pos, double *r, graphe_tait gt, plongement p, bool start_over, char* filename){
+    FILE *f_python = fopen("fleche.py", "a");
+    FILE *f = fopen(filename, "w");
+    double stroke_width = 0.008;
+    fprintf(f, "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"400\" height=\"400\" viewBox=\"0 0 3 3\" stroke=\"blue\" stroke-width=\"%lf\" fill=\"none\">\n", stroke_width);
     int n = 0;
     for (int i = 0; i < gt.n; i++){
         for (int j = 0; j < gt.deg[i]; j++){
             if (i < gt.adj[i][j]) n++;
         }
+        // fprintf(f, "<circle cx=\"%lf\" cy=\"%lf\" r=\"%lf\" stroke=\"red\"/>\n", pos[i].x, pos[i].y, r[i]);
+        // fprintf(f, "<circle cx=\"%lf\" cy=\"%lf\" r=\"%lf\" stroke=\"green\"/>\n", pos[i].x, pos[i].y, 0.0001);
     }
     vec *pos_intersections = malloc(sizeof(vec) * n);
+    double **ddir = malloc(sizeof(double*) * gt.n);
     bool *inited = malloc(sizeof(bool) * n);
     for (int i = 0; i < n; i++){
         inited[i] = false;
     } 
+    for (int i = 0; i < gt.n; i++){
+        ddir[i] = malloc(sizeof(double) * gt.deg[i]);
+    }
 
-    FILE *f_python = fopen("fleche.py", "a");
     for (int i = 0; i < gt.n; i++){
         for (int j = 0; j < gt.deg[i]; j++){
             int inter_idx = gt.sommets[i].sommets[j].sommet;
@@ -1364,16 +1380,16 @@ void calculer_svg(vec *pos, double *r, graphe_tait gt, char* filename){
     ecrire_footing_python(f_python);
     fclose(f_python);
 
-    // logiquement il devrait etre possible de faire un dfs, qui dessine tout le noeud (à méditer)
-    FILE *f = fopen(filename, "w");
-    fprintf(f, "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"400\" height=\"400\" viewBox=\"0 0 3 3\" stroke=\"blue\" stroke-width=\"0.008\" fill=\"none\">\n");
+    // logiquement il devrait etre possible de faire un dfs, qui dessine tout le noeud
     for (int i = 0; i < gt.n; i++){
         for (int j = 0; j < gt.deg[i]; j++){
             int i0 = gt.sommets[i].sommets[j].sommet;
             int i1 = gt.sommets[i].sommets[(j+1)%gt.sommets[i].n_sommets].sommet;
             double alpha = angle(pos_intersections[i0], pos[i], pos_intersections[i1]);
+            // printf("%d %d %d %d %lf\n", i0, i, i1, (j+1)%gt.sommets[i].n_sommets, alpha);
+            ddir[i][(j+1)%gt.sommets[i].n_sommets] = alpha; // on utilise que le noeud est alterné ; alpha vaut déjà déviation + 90° (alternance) 
             if (sin(PI/2 - alpha/2) == 0){
-                printf("<path d=\"M %lf %lf L %lf %lf\"/>\n", pos_intersections[i0].x, pos_intersections[i0].y, pos_intersections[i1].x, pos_intersections[i1].y);
+                fprintf(f, "<path d=\"M %lf %lf L %lf %lf\"/>\n", pos_intersections[i0].x, pos_intersections[i0].y, pos_intersections[i1].x, pos_intersections[i1].y);
             } else {
                 double rayon_arc = r[i] * fabs(sin(alpha/2) / sin(PI/4 - alpha/2));
                 int large = 0;
@@ -1384,14 +1400,66 @@ void calculer_svg(vec *pos, double *r, graphe_tait gt, char* filename){
             }
         }
     }
+
+    bool* vus = malloc(sizeof(bool) * p.n);
+    for (int i = 0; i < p.n; i++){
+        vus[i] = false;
+    }
+    int n_vus = 0;
+    int s0, s1 = 0, fa = 0; 
+    vec centre_plus_e_x = {pos[0].x+1, pos[0].y};
+
+    double dir = PI/2 - angle(pos_intersections[0], pos[0], centre_plus_e_x) - PI/4 + (start_over?PI/2:0);
+    dessiner_inter(pos_intersections[0], dir, stroke_width, f);
+    // printf("%lf\n", dir + 3.757072);
+    vus[0] = true;
+    n_vus++;
+    int k = 0;
+    bool sens_inverse = false;
+    while (n_vus < p.n && k < 1000) {
+        s0 = s1;
+        // printf("%d\n", s0);
+        for (int i = 0; i < gt.deg[fa]; i++){
+            if (gt.sommets[fa].sommets[i].sommet == s0){
+                int j; double dev;
+                if (sens_inverse) {
+                    j = (i+gt.deg[fa]-1)%gt.deg[fa];
+                    dev = -ddir[fa][i];
+                } else {
+                    j = (i+1)%gt.deg[fa];
+                    dev = ddir[fa][j];
+                }
+                s1 = gt.sommets[fa].sommets[j].sommet;
+                dir += dev;
+                // printf("%lf %lf\n", ddir[fa][j], dir);
+                if (!vus[s1]){
+                    dessiner_inter(pos_intersections[s1], dir, stroke_width, f);
+                    vus[s1] = true;
+                    n_vus++;
+                }
+                fa = gt.adj[fa][j];
+                sens_inverse = !sens_inverse;
+                break;
+            }
+        }
+        k++;
+    }
+
+
+
     fprintf(f, "</svg>\n");
     fclose(f);
+    for (int i = 0; i < gt.n; i++){
+        free(ddir[i]);
+    }
+    free(ddir);
+    free(vus);
     free(pos_intersections);
     free(inited);
 }
 
 int main(){
-        int n = 6;
+    int n = 6;
     voisin **adj = malloc(sizeof(voisin*) * n);
     int *deg = malloc(sizeof(int) * n);
     for (int i = 0; i < n; i++){
@@ -1469,7 +1537,7 @@ int main(){
     plongement plongement_gt_triangule = graphe_vers_plongement(gt_triangule);
     afficher_plongement(plongement_gt_triangule);
     graphe_angles_reduit gar = calculer_graphe_angles_reduit(plongement_gt_triangule);
-    double *r = calculer_radii(gar, 0.001, 1e-23);
+    double *r = calculer_rayons(gar, 0.001, 1e-23);
     for (int i = 0; i < 3; i++){
         printf("%d ", gar.cycle_exterieur[i]);
     }
@@ -1482,7 +1550,7 @@ int main(){
         printf("%e;%e\n", positions[i].x, positions[i].y);
     }
 
-    calculer_svg(positions, r, gt, "62.svg");
+    calculer_svg(positions, r, gt, p, false, "62.svg");
 
     free(positions);
     free_plongement(p);

@@ -2,5 +2,7 @@
     "files.associations": {
         "cairo.h": "c",
         "stdio.h": "c"
-    }
+    },
+    "python-envs.defaultEnvManager": "ms-python.python:system",
+    "python-envs.pythonProjects": []
 }
