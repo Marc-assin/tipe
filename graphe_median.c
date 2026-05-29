@@ -783,7 +783,7 @@ double phi_prime(int s, double *x, graphe H){
     return sum;
 }
 
-double* calculer_radii(graphe_angles_reduit gar, double coeff_apprentissage, double epsilon){
+double* calculer_rayons(graphe_angles_reduit gar, double coeff_apprentissage, double epsilon){
     graphe H = gar.H;
     int n = H.n;
     int s1 = gar.cycle_exterieur[0], s2 = gar.cycle_exterieur[1], s3 = gar.cycle_exterieur[2];
@@ -837,7 +837,7 @@ double* calculer_radii(graphe_angles_reduit gar, double coeff_apprentissage, dou
 }
 
 // int main(){
-void test_calculer_radii(){
+void test_calculer_rayons(){
     int n = 6;
     voisin **adj = malloc(sizeof(voisin*) * n);
     int *deg = malloc(sizeof(int) * n);
@@ -915,7 +915,7 @@ void test_calculer_radii(){
 
     // afficher_graphe(gar.H);
 
-    double *r = calculer_radii(gar, 0.001, 1e-25);
+    double *r = calculer_rayons(gar, 0.001, 1e-25);
 
     for (int i = 0; i < gar.H.n; i++){
         printf("%lf ", r[i]);
@@ -1276,7 +1276,7 @@ void test_calculer_positions(){
     plongement plongement_gt_triangule = graphe_vers_plongement(gt_triangule);
     afficher_plongement(plongement_gt_triangule);
     graphe_angles_reduit gar = calculer_graphe_angles_reduit(plongement_gt_triangule);
-    double *r = calculer_radii(gar, 0.001, 1e-23);
+    double *r = calculer_rayons(gar, 0.001, 1e-23);
     for (int i = 0; i < 3; i++){
         printf("%d ", gar.cycle_exterieur[i]);
     }
@@ -1537,7 +1537,7 @@ int main(){
     plongement plongement_gt_triangule = graphe_vers_plongement(gt_triangule);
     afficher_plongement(plongement_gt_triangule);
     graphe_angles_reduit gar = calculer_graphe_angles_reduit(plongement_gt_triangule);
-    double *r = calculer_radii(gar, 0.001, 1e-23);
+    double *r = calculer_rayons(gar, 0.001, 1e-23);
     for (int i = 0; i < 3; i++){
         printf("%d ", gar.cycle_exterieur[i]);
     }
