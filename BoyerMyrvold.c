@@ -1,6 +1,7 @@
 #include "knot_gen.c"
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 //Structures utiles
 struct intlist{
     int val;
@@ -1101,18 +1102,33 @@ graphe BoyerMyrvold(seq_dt seq){
     //A FAIRE Tout libérer
 
     graphe res = extraction_BM(gtilde, g_simple, arbre_DFS, associations);
-    print_graphe_final(res);
     return res;
 }
 
 
 /*Changer le truc des liens/lieu d'adjacence c'est ridicule un peu*/
-int main(){
-    int seq[6] = {3, (-6), 1, 4, (-2), (-5)};
-    seq_dt noeud_wiki = {.taille = 6, .seq = seq};
-    graphe g = BoyerMyrvold(noeud_wiki);
+int main(int argc, char *argv[]){
+    // int seq[6] = {3, (-6), 1, 4, (-2), (-5)};
+    // seq_dt noeud_wiki = {.taille = 6, .seq = seq};
+    // graphe g = BoyerMyrvold(noeud_wiki);
     
-    printf("\nok!\n");
-    fflush(stdout);
+    // printf("\nok!\n");
+    // fflush(stdout);
+
+    // int seq[6] = {2,3,4,5,6,1};
+    // seq_dt noeud = {.taille = 6, .seq = seq};
+    //graphe g = BoyerMyrvold(noeud);
+    // printf("%d ", atoi(argv[1]));
+    seq_dt noeud;
+    init_seq_dt(&noeud, atoi(argv[1]));
+
+    for(int i=2; i<argc; i++){
+        // printf("%d %d\n", atoi(argv[i]), noeud.seq[i-2]);
+        noeud.seq[i-2] = atoi(argv[i]);
+    }
+    graphe g = BoyerMyrvold(noeud);
+    //print_graphe_final(g);
+
+
     return 0;
 }

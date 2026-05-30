@@ -1719,10 +1719,13 @@ int main(){
 	FILE* f = fopen("aretes.txt", "w");
 	fprintf(f, "Aretes:\n");
 	fclose(f);
-    int seq[6] = {3, (-6), 1, 4, (-2), (-5)};
-    seq_dt noeud_wiki = {.taille = 6, .seq = seq};
-    graphe g = BoyerMyrvold(noeud_wiki);
-    
+    // int seq[6] = {3, (-6), 1, 4, (-2), (-5)};
+    // seq_dt noeud_wiki = {.taille = 6, .seq = seq};
+    // graphe g = BoyerMyrvold(noeud_wiki);
+    int seq[6] = {2,3,4,5,6,1};
+    seq_dt noeud = {.taille = 6, .seq = seq};
+    graphe g = BoyerMyrvold(noeud);
+
     printf("\nok!\n");
     fflush(stdout);
     return 0;
