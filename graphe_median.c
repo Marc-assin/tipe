@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 
 /*
 pour calculer le graphe de Tait :
@@ -30,6 +31,16 @@ struct face {
 };
 
 typedef struct face face;
+
+face copie_face(face f){
+    face f2;
+    f2.n_sommets = f.n_sommets;
+    f2.sommets = malloc(sizeof(voisin) * f2.n_sommets);
+    for (int i = 0; i < f2.n_sommets; i++){
+        f2.sommets[i] = f.sommets[i];
+    }
+    return f2;
+}
 
 struct faces_arr {
     int n;
@@ -217,72 +228,99 @@ bool test_faces_voisines(face f1, face f2){
     // il faut avoir un sommet en commun, et pas d'arete en commun pour etre voisin
 }
 
+void free_graphe_tait(graphe_tait gt);
+
 graphe_tait calculer_graphe_tait(plongement p){
     faces_arr fa = calculer_faces(p);
     int max_n = fa.n;
     face *faces = fa.faces;
+    graphe_tait gt;
+    bool simple = true;
 
     bool *vus = malloc(sizeof(bool) * max_n);
     for (int i = 0; i < max_n; i++){
         vus[i] = false;
     }
-    int *file = malloc(sizeof(int) * max_n);
-    file[0] = 0; // a la fin du bfs, les indices des faces présentes dans file[0:r] sont les indices des faces qui sont les sommets du graphe de Tait
-    vus[0] = true;
-    int r = 1;
-    for (int l = 0; l < r; l++){
-        // calculer les voisins, et les ajouter à la file si on ne les a pas encore vus
+    for (int attempts = 0; attempts < 2; attempts++){ // il y a seulement 2 graphes de Tait possibles
+        int sommet_depart;
         for (int i = 0; i < max_n; i++){
-            if (vus[i]) continue;
-            if (test_faces_voisines(faces[file[l]], faces[i])){
-                vus[i] = true;
-                file[r] = i;
-                r++;
+            if (!vus[i]){
+                sommet_depart = i;
+                break;
             }
         }
-    }
-    
-    graphe_tait gt;
-    gt.n = r;
-    gt.deg = malloc(sizeof(int) * gt.n);
-    gt.adj = malloc(sizeof(int*) * gt.n);
-    gt.sommets = malloc(sizeof(face) * gt.n);
-    for (int i = 0; i < r; i++){
-        gt.sommets[i] = faces[file[i]];
-    }
-    int *temp_voisins = malloc(sizeof(int) * gt.n);
-    for (int i = 0; i < r; i++){
-        gt.deg[i] = 0;
-        for (int j = 0; j < gt.n; j++){
-            if (test_faces_voisines(gt.sommets[i], gt.sommets[j])){
-                temp_voisins[gt.deg[i]] = j; // une face ne peut pas etre voisine d'elle même
-                gt.deg[i]++;
+        int *file = malloc(sizeof(int) * max_n);
+        file[0] = sommet_depart; // a la fin du bfs, les indices des faces présentes dans file[0:r] sont les indices des faces qui sont les sommets du graphe de Tait
+        vus[sommet_depart] = true;
+        int r = 1;
+        for (int l = 0; l < r; l++){
+            // calculer les voisins, et les ajouter à la file si on ne les a pas encore vus
+            for (int i = 0; i < max_n; i++){
+                if (vus[i]) continue;
+                if (test_faces_voisines(faces[file[l]], faces[i])){
+                    vus[i] = true;
+                    file[r] = i;
+                    r++;
+                }
             }
         }
-        gt.adj[i] = malloc(sizeof(int) * gt.deg[i]);
-        for (int j = 0; j < gt.deg[i]; j++){
-            for (int k = 0; k < gt.deg[i]; k++){
-                int s = gt.sommets[i].sommets[j].sommet;
-                for (int l = 0; l < gt.sommets[temp_voisins[k]].n_sommets; l++){
-                    if (gt.sommets[temp_voisins[k]].sommets[l].sommet == s){ 
-                        // seulement un seul des voisins de f lui partage le sommet s. De cette manière, les voisins sont dans le meme ordre que les sommets autour de f, ce qui fait que gt est un plongement combinatoire
-                        gt.adj[i][j] = temp_voisins[k];
+        
+        simple = true;
+        gt.n = r;
+        gt.deg = malloc(sizeof(int) * gt.n);
+        gt.adj = malloc(sizeof(int*) * gt.n);
+        gt.sommets = malloc(sizeof(face) * gt.n);
+
+        
+        for (int i = 0; i < r; i++){
+            gt.sommets[i] = copie_face(faces[file[i]]);
+            gt.deg[i] = gt.sommets[i].n_sommets;
+            gt.adj[i] = malloc(sizeof(int) * gt.deg[i]);
+        }
+
+        int *temp_voisins = malloc(sizeof(int) * gt.n);
+        for (int i = 0; i < r; i++){
+            int nb_temp_voisins = 0;
+            for (int j = 0; j < gt.n; j++){
+                if (test_faces_voisines(gt.sommets[i], gt.sommets[j])){
+                    temp_voisins[nb_temp_voisins] = j; // une face ne peut pas etre voisine d'elle même
+                    nb_temp_voisins++;
+                }
+            }
+
+            if (nb_temp_voisins < gt.deg[i]) { // deux voisins sont égaux, gt est un multigraphe
+                simple = false;
+                break;
+            }
+            
+            for (int j = 0; j < gt.deg[i]; j++){
+                for (int k = 0; k < nb_temp_voisins; k++){
+                    int s = gt.sommets[i].sommets[j].sommet;
+                    for (int l = 0; l < gt.sommets[temp_voisins[k]].n_sommets; l++){
+                        if (gt.sommets[temp_voisins[k]].sommets[l].sommet == s){ 
+                            // seulement un seul des voisins de f lui partage le sommet s. De cette manière, les voisins sont dans le meme ordre que les sommets autour de f, ce qui fait que gt est un plongement combinatoire
+                            gt.adj[i][j] = temp_voisins[k];
+                        }
                     }
                 }
             }
         }
+        free(file);
+        free(temp_voisins);
+        if (simple) {
+            break;
+        } 
+        free_graphe_tait(gt);
     }
     
+    assert(simple); // Pas de graphe de Tait simple.
     
     for (int i = 0; i < fa.n; i++){
-        if (vus[i] == false){
-            free(fa.faces[i].sommets);
-        }
+        free(fa.faces[i].sommets);
     }
-    free(temp_voisins);
     free(faces);
     free(vus);
-    free(file);
+    
     return gt;
 }
 
@@ -462,6 +500,26 @@ plongement graphe_vers_plongement(graphe g){
         free(indice_arete[i]);
     }
     free(indice_arete);
+
+//     for (int i = 0; i < p.n; i++) {
+//     for (int j = 0; j < p.deg[i]; j++) {
+//         int v = p.adj[i][j].sommet;
+//         int id = p.adj[i][j].id_arete;
+        
+//         // Vérifier si l'arête existe dans le sens inverse
+//         bool found = false;
+//         for (int k = 0; k < p.deg[v]; k++) {
+//             if (p.adj[v][k].sommet == i && p.adj[v][k].id_arete == id) {
+//                 found = true;
+//                 break;
+//             }
+//         }
+//         if (!found) {
+//             printf("COHÉRENCE ROMPUE : Arête %d non trouvée pour le retour %d->%d\n", id, v, i);
+//         }
+//     }
+// }
+
     return p;
 }
 
@@ -473,13 +531,40 @@ plongement gt_vers_plongement(graphe_tait gt){
     p.deg = malloc(sizeof(int) * n);
     p.adj = malloc(sizeof(voisin*) * n);
 
-    int **indice_arete = malloc(sizeof(int*) * n);
-    for (int i = 0; i < n; i++){
-        indice_arete[i] = malloc(sizeof(int) * n);
-        for (int j = 0; j < n; j++){
-            indice_arete[i][j] = -1;
-        }
-    }
+    // int ***indice_arete = malloc(sizeof(int**) * n);
+    // for (int i = 0; i < n; i++){
+    //     indice_arete[i] = malloc(sizeof(int) * n);
+    //     for (int j = 0; j < n; j++){
+    //         indice_arete[i][j] = malloc(sizeof(int) * n) // le n ici est pas bon, il faut le nombre de sommets du graphe d'origine
+    //             for (int k = 0; k < n; k++){
+    //                 indice_arete[i][j][k] = -1;
+    //             }
+    //         }
+    //     }
+
+    // int compteur_aretes = 0;
+
+    // for (int i = 0; i < n; i++){
+    //     p.deg[i] = gt.deg[i];
+    //     p.adj[i] = malloc(sizeof(voisin) * p.deg[i]);
+
+    //     for (int j = 0; j < p.deg[i]; j++){
+    //         int v = gt.adj[i][j];
+    //         int s = gt.sommets[i].sommets[j].sommet; // on prend en compte les multi aretes, en sachant que à chaque sommet de G_noeud est associée une seule arête de gt
+
+    //         voisin w;
+    //         w.sommet = v;
+
+    //         if (indice_arete[i][v][s] == -1){
+    //             indice_arete[i][v][s] = compteur_aretes;
+    //             indice_arete[v][i][s] = compteur_aretes;
+    //             compteur_aretes++;
+    //         }
+
+    //         w.id_arete = indice_arete[i][v][s];
+    //         p.adj[i][j] = w;
+    //     }
+    // }
 
     int compteur_aretes = 0;
 
@@ -489,25 +574,14 @@ plongement gt_vers_plongement(graphe_tait gt){
 
         for (int j = 0; j < p.deg[i]; j++){
             int v = gt.adj[i][j];
+            int s = gt.sommets[i].sommets[j].sommet; // à chaque sommet de G_noeud est associée une et une seule arête de gt
 
             voisin w;
             w.sommet = v;
-
-            if (indice_arete[i][v] == -1){
-                indice_arete[i][v] = compteur_aretes;
-                indice_arete[v][i] = compteur_aretes;
-                compteur_aretes++;
-            }
-
-            w.id_arete = indice_arete[i][v];
+            w.id_arete = s;
             p.adj[i][j] = w;
         }
     }
-
-    for (int i = 0; i < n; i++){
-        free(indice_arete[i]);
-    }
-    free(indice_arete);
 
     return p;
 }
@@ -766,7 +840,6 @@ arete_arr calculer_aretes(graphe g){
 
 #include <math.h>
 #define PI 3.14159265358979323846
-#include <assert.h>
 
 double phi_prime(int s, double *x, graphe H){
     double sum = 0.0;
@@ -790,7 +863,7 @@ double* calculer_rayons(graphe_angles_reduit gar, double coeff_apprentissage, do
     double *x = malloc(sizeof(double) * n);
     double *dphidx = malloc(sizeof(double) * n);
     for (int i = 0; i < n; i++){
-        x[i] = 0.0;
+        x[i] = log(tan(PI/3))/2;
     }
     x[s1] = log(tan(PI/3));
     x[s2] = log(tan(PI/3));
@@ -802,7 +875,7 @@ double* calculer_rayons(graphe_angles_reduit gar, double coeff_apprentissage, do
             dphidx[i] = 0;
         }
     }
-    double MSE = 0.0;
+    double MSE = 0.0, last_MSE;
     for (int i = 0; i < n; i++){
         MSE += dphidx[i]*dphidx[i];
     }
@@ -817,20 +890,35 @@ double* calculer_rayons(graphe_angles_reduit gar, double coeff_apprentissage, do
         for (int i = 0; i < n; i++){
             if (i != s1 && i != s2 && i != s3) {
                 dphidx[i] = phi_prime(i, x, H);
+                // printf("%e\n", phi_prime(i, x, H));
             } else {
                 dphidx[i] = 0;
             }
         }
+        last_MSE = MSE;
         MSE = 0.0;
         for (int i = 0; i < n; i++){
             MSE += dphidx[i]*dphidx[i];
         }
+        // if (fabs(last_MSE - MSE) <= 0.0001){
+        //     break;
+        // }
     }
     double *r = malloc(sizeof(double) * n);
+    
     for (int i = 0; i < n; i++){
-        printf("%e\n", phi_prime(i, x, H));
-        r[i] = exp(x[i]);
+        if (i != s1 && i != s2 && i != s3) {
+            printf("%e\n", phi_prime(i, x, H));
+        } else {
+            printf("%e\n", 0);
+        }
     }
+    printf("\n\n");
+    for (int i = 0; i < n; i++){
+        r[i] = exp(x[i]);
+        printf("%e\n", r[i]);
+    }
+    // while(true){}
     free(x);
     free(dphidx);
     return r;
@@ -1348,12 +1436,18 @@ void calculer_svg(vec *pos, double *r, graphe_tait gt, plongement p, bool start_
     double stroke_width = 0.008;
     fprintf(f, "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"400\" height=\"400\" viewBox=\"0 0 3 3\" stroke=\"blue\" stroke-width=\"%lf\" fill=\"none\">\n", stroke_width);
     int n = 0;
+    // for (int i = 0; i < gt.n; i++){
+    //     for (int j = 0; j < gt.deg[i]; j++){
+    //         if (i < gt.adj[i][j]) {
+    //             fprintf(f, "<path d=\"M %lf %lf L %lf %lf\" stroke=\"green\" stroke-dasharray=\"0.02 0.01 0.04 0.01\"/>\n", pos[i].x, pos[i].y, pos[gt.adj[i][j]].x, pos[gt.adj[i][j]].y);
+    //         }
+    //     }
+    // }
     for (int i = 0; i < gt.n; i++){
         for (int j = 0; j < gt.deg[i]; j++){
             if (i < gt.adj[i][j]) n++;
         }
-        // fprintf(f, "<circle cx=\"%lf\" cy=\"%lf\" r=\"%lf\" stroke=\"red\"/>\n", pos[i].x, pos[i].y, r[i]);
-        // fprintf(f, "<circle cx=\"%lf\" cy=\"%lf\" r=\"%lf\" stroke=\"green\"/>\n", pos[i].x, pos[i].y, 0.0001);
+        // fprintf(f, "<circle cx=\"%lf\" cy=\"%lf\" r=\"%lf\" stroke=\"red\" stroke-dasharray=\"0.01 0.01\"/>\n", pos[i].x, pos[i].y, r[i]);
     }
     vec *pos_intersections = malloc(sizeof(vec) * n);
     double **ddir = malloc(sizeof(double*) * gt.n);
@@ -1372,6 +1466,7 @@ void calculer_svg(vec *pos, double *r, graphe_tait gt, plongement p, bool start_
                 inited[inter_idx] = true;
                 pos_intersections[inter_idx].x = (pos[i].x * r[gt.adj[i][j]] + pos[gt.adj[i][j]].x * r[i]) / (r[i] + r[gt.adj[i][j]]);
                 pos_intersections[inter_idx].y = (pos[i].y * r[gt.adj[i][j]] + pos[gt.adj[i][j]].y * r[i]) / (r[i] + r[gt.adj[i][j]]);
+                // fprintf(f, "<circle cx=\"%lf\" cy=\"%lf\" r=\"%lf\" stroke=\"blue\" fill=\"white\"/>\n",pos_intersections[inter_idx].x, pos_intersections[inter_idx].y, 0.01);
                 printf("je place %d avec %d et %d\n", inter_idx, i, gt.adj[i][j]);
                 ecrire_point_python(f_python, pos_intersections[inter_idx].x, pos_intersections[inter_idx].y, "b", inter_idx);
             }    
@@ -1400,6 +1495,17 @@ void calculer_svg(vec *pos, double *r, graphe_tait gt, plongement p, bool start_
             }
         }
     }
+
+    // for (int inter_idx = 0; inter_idx < n; inter_idx++){
+    //     fprintf(f, "<circle cx=\"%lf\" cy=\"%lf\" r=\"%lf\" stroke=\"blue\" fill=\"white\"/>\n",pos_intersections[inter_idx].x, pos_intersections[inter_idx].y, 0.01);
+    // }
+    
+    // for (int i = 0; i < gt.n; i++){
+    //     for (int j = 0; j < gt.deg[i]; j++){
+    //         if (i < gt.adj[i][j]) n++;
+    //     }
+    //     fprintf(f, "<circle cx=\"%lf\" cy=\"%lf\" r=\"%lf\" stroke=\"green\" fill=\"white\"/>\n", pos[i].x, pos[i].y, 0.01);
+    // }
 
     bool* vus = malloc(sizeof(bool) * p.n);
     for (int i = 0; i < p.n; i++){
@@ -1537,7 +1643,7 @@ int main(){
     plongement plongement_gt_triangule = graphe_vers_plongement(gt_triangule);
     afficher_plongement(plongement_gt_triangule);
     graphe_angles_reduit gar = calculer_graphe_angles_reduit(plongement_gt_triangule);
-    double *r = calculer_rayons(gar, 0.001, 1e-23);
+    double *r = calculer_rayons(gar, 0.1, 1e-23);
     for (int i = 0; i < 3; i++){
         printf("%d ", gar.cycle_exterieur[i]);
     }
@@ -1550,7 +1656,7 @@ int main(){
         printf("%e;%e\n", positions[i].x, positions[i].y);
     }
 
-    calculer_svg(positions, r, gt, p, false, "62.svg");
+    calculer_svg(positions, r, gt, p, false, "62_figure_bis.svg");
 
     free(positions);
     free_plongement(p);
