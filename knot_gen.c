@@ -78,6 +78,63 @@ void calculer_phi(int** phi, int* a, int n){
     }
 }
 
+struct bst{
+    seq_dt val;
+    struct bst *g, *d;
+};
+
+typedef struct bst bst;
+
+int comp(seq_dt a, seq_dt b){
+    for (int i = 0; i < a.taille; i++){
+        if (a.seq[i] < b.seq[i]){
+            return 1;
+        } else if (a.seq[i] > b.seq[i]) {
+            return -1;
+        }
+    }
+    return 0;
+}
+
+seq_dt copy_dt(seq_dt s){
+    seq_dt s2;
+    s2.taille = s.taille;
+    s2.seq = malloc(sizeof(int) * s2.taille);
+    for (int i = 0; i < s2.taille; i++){
+        s2.seq[i] = s.seq[i];
+    }
+    return s2;
+}
+
+void inserer_bst(bst** arbre, seq_dt s){
+    if (*arbre == NULL) {
+        *arbre = malloc(sizeof(bst));
+        (*arbre)->val = copy_dt(s);
+        (*arbre)->g = NULL;
+        (*arbre)->d = NULL;
+    }
+    int c = comp((*arbre)->val, s);
+    if (c == -1){
+        inserer_bst(&((*arbre)->g), s);
+    } else if (c == 1){
+        inserer_bst(&((*arbre)->d), s);
+    } 
+}
+
+bool trouver_bst(bst** arbre, seq_dt s){
+    if (*arbre == NULL) {
+        return false;
+    }
+    int c = comp((*arbre)->val, s);
+    if (c == -1){
+        return trouver_bst(&((*arbre)->g), s);
+    } else if (c == 1){
+        return trouver_bst(&((*arbre)->d), s);
+    } 
+    return true;
+}
+
+
 
 // ordre : ordre des permutations, puis ordre des sous parties pour les signes
 void next_seq_dt(seq_dt *s) {
@@ -140,6 +197,40 @@ void next_seq_dt(seq_dt *s) {
             s->seq[j] = temp;
         }
     // }
+}
+
+void next_seq_dt_std(seq_dt *s, bst *arbre) {
+    if (s->seq == NULL || s->taille <= 0) {
+        fprintf(stderr, "La séquence n'est pas initialisée ou a une taille invalide.\n");
+        return;
+    }
+
+    int pivot_index = s->taille - 2;
+    while (pivot_index >= 0 && s->seq[pivot_index + 1] <= s->seq[pivot_index]) {
+        pivot_index--;
+    }
+
+    if (pivot_index < 0) {
+        printf("Fin de la séquence.\n");
+        free_seq_dt(s);
+        exit(EXIT_SUCCESS);
+        return;
+    }
+
+    int swap_index = s->taille - 1;
+    while (s->seq[swap_index] <= s->seq[pivot_index]) {
+        swap_index--;
+    }
+
+    int temp = s->seq[pivot_index];
+    s->seq[pivot_index] = s->seq[swap_index];
+    s->seq[swap_index] = temp;
+
+    for (int i = pivot_index + 1, j = s->taille - 1; i < j; i++, j--) {
+        int temp = s->seq[i];
+        s->seq[i] = s->seq[j];
+        s->seq[j] = temp;
+    }
 }
 
 void test_en_taille_4() {
