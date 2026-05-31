@@ -961,6 +961,11 @@ graphe extraction_BM(graphe_comb gtilde, graphe g_simple, double_liste** arbre_D
     graphe res;
     res.n = gtilde.n/5;
     res.adj = malloc(res.n*sizeof(int*));
+    res.type = malloc(res.n*sizeof(int*));
+    for(int s=0; s<res.n; s++){
+        res.type[s] = malloc(4*sizeof(int));
+    }
+
     DFS_final(gtilde, &res, 1, 0, arbre_DFS);
 
     //On cherche à raccorder les demi-arêtes
@@ -974,19 +979,66 @@ graphe extraction_BM(graphe_comb gtilde, graphe g_simple, double_liste** arbre_D
             }
         }
     }
-    
+
+    //On veut donner des identifiants aux arêtes
+    int nb_aretes = 0;
+    //Les identifiants seront stockés dans type
+    for(int s=0; s<res.n; s++){
+        for(int j = 0; j<4; j++){
+            res.type[s][j] = -1;
+        }
+    }
+    //On commence par les arêtes doubles
+    for(int s=0; s<res.n; s++){
+        for(int j = 0; j<4; j++){
+            if(res.type[s][j] == -1){
+                if(res.adj[s][j] == res.adj[s][(j+1)%4]){ //arête double, forcément consécutives
+                    //On cherche l'ancrage double de l'autre côté
+                    int v = res.adj[s][j];
+                    int opp;
+                    for(int k = 0; k<4; k++){
+                        if(res.adj[v][k] == res.adj[v][(k+1)%4] && res.adj[v][k] == s){ //arête double vers s
+                            opp = k;
+                        }
+                    }
+                    res.type[s][j] = nb_aretes;
+                    res.type[v][(opp+1)%4] = nb_aretes++;
+                    res.type[s][(j+1)%4] = nb_aretes;
+                    res.type[v][opp] = nb_aretes++;
+                }
+            }
+        }
+    }
+    //Puis les arêtes simples
+    for(int s=0; s<res.n; s++){
+        for(int j = 0; j<4; j++){
+            if(res.type[s][j] == -1){ //Pas déjà traitée
+                res.type[s][j] = nb_aretes;
+                int v = res.adj[s][j];
+                for(int k = 0; k<4; k++){
+                    if(res.adj[v][k] == s){
+                        res.type[v][k] = nb_aretes++;
+                    }
+                }
+            }
+        }
+    }
     return res;
 }
 
 void print_graphe_final(graphe g){
+    FILE* f = fopen("noeuds.txt", "a");
+    fprintf(f, "%d ", g.n);
     for(int i=0; i<g.n; i++){
-        printf("%d: ", i);
+        // printf("%d: ", i);
         for(int j = 0; j<4; j++){
-            printf("%d, ", g.adj[i][j]);
+            fprintf(f, "%d %d ", g.adj[i][j], g.type[i][j]);
         }
-        printf("\n");
+        // printf("\n");
     }
+    fprintf(f, "\n");
 }
+
 
 graphe BoyerMyrvold(seq_dt seq){
     /*Prend une séquence DT et renvoie le graphe combinatoire après exécution de l'algo de Boyer Myrvold*/
@@ -1105,7 +1157,6 @@ graphe BoyerMyrvold(seq_dt seq){
     return res;
 }
 
-
 /*Changer le truc des liens/lieu d'adjacence c'est ridicule un peu*/
 int main(int argc, char *argv[]){
     // int seq[6] = {3, (-6), 1, 4, (-2), (-5)};
@@ -1115,20 +1166,20 @@ int main(int argc, char *argv[]){
     // printf("\nok!\n");
     // fflush(stdout);
 
-    // int seq[6] = {2,3,4,5,6,1};
+    // int seq[6] = {3, (-6), 1, 4, (-2), (-5)};
     // seq_dt noeud = {.taille = 6, .seq = seq};
-    //graphe g = BoyerMyrvold(noeud);
+    // graphe g = BoyerMyrvold(noeud);
     // printf("%d ", atoi(argv[1]));
+
     seq_dt noeud;
     init_seq_dt(&noeud, atoi(argv[1]));
 
     for(int i=2; i<argc; i++){
-        // printf("%d %d\n", atoi(argv[i]), noeud.seq[i-2]);
         noeud.seq[i-2] = atoi(argv[i]);
     }
     graphe g = BoyerMyrvold(noeud);
-    //print_graphe_final(g);
-
+    print_graphe_final(g);
+    printf("ok\n");
 
     return 0;
 }
