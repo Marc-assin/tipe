@@ -1179,7 +1179,7 @@ int main(int argc, char *argv[]){
     }
     graphe g = BoyerMyrvold(noeud);
     print_graphe_final(g);
-    FILE* f = fopen("sequencesok.txt", "a");
+    FILE* f = fopen("sequencesok2.txt", "a");
     fprint_seq_dt(&noeud, f);
     printf("ok\n");
     fclose(f);
