@@ -1564,99 +1564,114 @@ void calculer_svg(vec *pos, double *r, graphe_tait gt, plongement p, bool start_
     free(inited);
 }
 
-int main(){
-    int n = 6;
+#include <string.h>
+
+int main(int argc, char *argv[]){
+    int n = atoi(argv[2]);
     voisin **adj = malloc(sizeof(voisin*) * n);
     int *deg = malloc(sizeof(int) * n);
+    int l = 3;
     for (int i = 0; i < n; i++){
         adj[i] = malloc(sizeof(voisin) * 4);
+        deg[i] = 4;
+        for (int j = 0; j < 4; j++){
+            adj[i][j].sommet = atoi(argv[l]);
+            l++;
+            adj[i][j].id_arete = atoi(argv[l]);
+            l++;
+        }
     }
+
+
     
-    adj[0][0].id_arete = 3;
-    adj[0][0].sommet = 5;
-    adj[0][1].id_arete = 2;
-    adj[0][1].sommet = 2;
-    adj[0][2].id_arete = 4;
-    adj[0][2].sommet = 3;
-    adj[0][3].id_arete = 5;
-    adj[0][3].sommet = 4;
-    deg[0] = 4;
+    // adj[0][0].id_arete = 3;
+    // adj[0][0].sommet = 5;
+    // adj[0][1].id_arete = 2;
+    // adj[0][1].sommet = 2;
+    // adj[0][2].id_arete = 4;
+    // adj[0][2].sommet = 3;
+    // adj[0][3].id_arete = 5;
+    // adj[0][3].sommet = 4;
+    // deg[0] = 4;
     
-    adj[1][0].id_arete = 11;
-    adj[1][0].sommet = 2;
-    adj[1][1].id_arete = 1;
-    adj[1][1].sommet = 2;
-    adj[1][2].id_arete = 0;
-    adj[1][2].sommet = 5;
-    adj[1][3].id_arete = 10;
-    adj[1][3].sommet = 5;
-    deg[1] = 4;
+    // adj[1][0].id_arete = 11;
+    // adj[1][0].sommet = 2;
+    // adj[1][1].id_arete = 1;
+    // adj[1][1].sommet = 2;
+    // adj[1][2].id_arete = 0;
+    // adj[1][2].sommet = 5;
+    // adj[1][3].id_arete = 10;
+    // adj[1][3].sommet = 5;
+    // deg[1] = 4;
     
-    adj[2][0].id_arete = 1;
-    adj[2][0].sommet = 1;
-    adj[2][1].id_arete = 11;
-    adj[2][1].sommet = 1;
-    adj[2][2].id_arete = 7;
-    adj[2][2].sommet = 3;
-    adj[2][3].id_arete = 2;
-    adj[2][3].sommet = 0;
-    deg[2] = 4;
+    // adj[2][0].id_arete = 1;
+    // adj[2][0].sommet = 1;
+    // adj[2][1].id_arete = 11;
+    // adj[2][1].sommet = 1;
+    // adj[2][2].id_arete = 7;
+    // adj[2][2].sommet = 3;
+    // adj[2][3].id_arete = 2;
+    // adj[2][3].sommet = 0;
+    // deg[2] = 4;
     
-    adj[3][0].id_arete = 7;
-    adj[3][0].sommet = 2;
-    adj[3][1].id_arete = 8;
-    adj[3][1].sommet = 4;
-    adj[3][2].id_arete = 6;
-    adj[3][2].sommet = 4;
-    adj[3][3].id_arete = 4;
-    adj[3][3].sommet = 0;
-    deg[3] = 4;
+    // adj[3][0].id_arete = 7;
+    // adj[3][0].sommet = 2;
+    // adj[3][1].id_arete = 8;
+    // adj[3][1].sommet = 4;
+    // adj[3][2].id_arete = 6;
+    // adj[3][2].sommet = 4;
+    // adj[3][3].id_arete = 4;
+    // adj[3][3].sommet = 0;
+    // deg[3] = 4;
     
-    adj[4][0].id_arete = 5;
-    adj[4][0].sommet = 0;
-    adj[4][1].id_arete = 6;
-    adj[4][1].sommet = 3;
-    adj[4][2].id_arete = 8;
-    adj[4][2].sommet = 3;
-    adj[4][3].id_arete = 9;
-    adj[4][3].sommet = 5;
-    deg[4] = 4;
+    // adj[4][0].id_arete = 5;
+    // adj[4][0].sommet = 0;
+    // adj[4][1].id_arete = 6;
+    // adj[4][1].sommet = 3;
+    // adj[4][2].id_arete = 8;
+    // adj[4][2].sommet = 3;
+    // adj[4][3].id_arete = 9;
+    // adj[4][3].sommet = 5;
+    // deg[4] = 4;
     
-    adj[5][0].id_arete = 0;
-    adj[5][0].sommet = 1;
-    adj[5][1].id_arete = 3;
-    adj[5][1].sommet = 0;
-    adj[5][2].id_arete = 9;
-    adj[5][2].sommet = 4;
-    adj[5][3].id_arete = 10;
-    adj[5][3].sommet = 1;
-    deg[5] = 4;
+    // adj[5][0].id_arete = 0;
+    // adj[5][0].sommet = 1;
+    // adj[5][1].id_arete = 3;
+    // adj[5][1].sommet = 0;
+    // adj[5][2].id_arete = 9;
+    // adj[5][2].sommet = 4;
+    // adj[5][3].id_arete = 10;
+    // adj[5][3].sommet = 1;
+    // deg[5] = 4;
 
     plongement p = {n, adj, deg};
 
     graphe_tait gt = calculer_graphe_tait(p);
-    afficher_graphe_tait(gt);
+    // afficher_graphe_tait(gt);
     plongement plongement_gt = gt_vers_plongement(gt);
-    afficher_plongement(plongement_gt);
+    // afficher_plongement(plongement_gt);
     graphe gt_triangule = trianguler_faces(plongement_gt);
-    afficher_graphe(gt_triangule);
+    // afficher_graphe(gt_triangule);
     plongement plongement_gt_triangule = graphe_vers_plongement(gt_triangule);
-    afficher_plongement(plongement_gt_triangule);
+    // afficher_plongement(plongement_gt_triangule);
     graphe_angles_reduit gar = calculer_graphe_angles_reduit(plongement_gt_triangule);
     double *r = calculer_rayons(gar, 0.1, 1e-23);
-    for (int i = 0; i < 3; i++){
-        printf("%d ", gar.cycle_exterieur[i]);
-    }
-    printf("\n");
-    afficher_graphe(gar.H);
+    // for (int i = 0; i < 3; i++){
+    //     printf("%d ", gar.cycle_exterieur[i]);
+    // }
+    // printf("\n");
+    // afficher_graphe(gar.H);
 
     vec *positions = calculer_positions(r, gar);
 
-    for (int i = 0; i < gar.H.n; i++){
-        printf("%e;%e\n", positions[i].x, positions[i].y);
-    }
+    // for (int i = 0; i < gar.H.n; i++){
+    //     printf("%e;%e\n", positions[i].x, positions[i].y);
+    // }
 
-    calculer_svg(positions, r, gt, p, false, "62_figure_bis.svg");
+    char filename[200];
+    strcpy(filename, argv[1]);
+    strcat(filename, ".svg");
+    calculer_svg(positions, r, gt, p, false, filename);
 
     free(positions);
     free_plongement(p);
