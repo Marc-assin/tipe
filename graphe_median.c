@@ -114,9 +114,9 @@ faces_arr calculer_faces(plongement p){
 
 void afficher_face(face f){
     for (int i = 0; i < f.n_sommets; i++){
-        printf("%d ", f.sommets[i].sommet);
+        // printf("%d ", f.sommets[i].sommet);
     }
-    printf("\n");
+    // printf("\n");
 }
 
 void test_calculer_faces(){
@@ -191,9 +191,9 @@ void test_calculer_faces(){
 
     faces_arr fa = calculer_faces(p);
 
-    for (int i = 0; i < fa.n; i++){
-        afficher_face(fa.faces[i]);
-    }
+    // for (int i = 0; i < fa.n; i++){
+    //     afficher_face(fa.faces[i]);
+    // }
 
     for (int i = 0; i < fa.n; i++){
         free(fa.faces[i].sommets);
@@ -397,13 +397,13 @@ void test_calculer_graphe_tait(){
 
     graphe_tait gt = calculer_graphe_tait(p);
 
-    for (int i = 0; i < gt.n; i++){
-        afficher_face(gt.sommets[i]);
-        for (int j = 0; j < gt.deg[i]; j++){
-            printf(" %d", gt.adj[i][j]);
-        }
-        printf("\n");
-    }
+    // for (int i = 0; i < gt.n; i++){
+    //     afficher_face(gt.sommets[i]);
+    //     for (int j = 0; j < gt.deg[i]; j++){
+    //         printf(" %d", gt.adj[i][j]);
+    //     }
+    //     printf("\n");
+    // }
 
     
     for (int i = 0; i < gt.n; i++){
@@ -747,7 +747,7 @@ void test_trianguler_graphe(){
 
     faces_arr fa = calculer_faces(p2);
 
-    afficher_faces_arr(fa);
+    // afficher_faces_arr(fa);
     free_faces_arr(fa);
     free_plongement(p);
     free_plongement(p2);
@@ -908,15 +908,15 @@ double* calculer_rayons(graphe_angles_reduit gar, double coeff_apprentissage, do
     
     for (int i = 0; i < n; i++){
         if (i != s1 && i != s2 && i != s3) {
-            printf("%e\n", phi_prime(i, x, H));
+            // printf("%e\n", phi_prime(i, x, H));
         } else {
-            printf("%e\n", 0);
+            // printf("%e\n", 0);
         }
     }
-    printf("\n\n");
+    // printf("\n\n");
     for (int i = 0; i < n; i++){
         r[i] = exp(x[i]);
-        printf("%e\n", r[i]);
+        // printf("%e\n", r[i]);
     }
     // while(true){}
     free(x);
@@ -1111,9 +1111,9 @@ vec* calculer_positions(double *r, graphe_angles_reduit gar){
                 if (t1 >= 0) printf("found 2\n");
                 t1 = i;
                 for (int k = 0; k < gar.H.adj[i]->taille; k++){
-                    printf("%d ", gar.H.adj[i]->data[k]);
+                    // printf("%d ", gar.H.adj[i]->data[k]);
                 }
-                printf("\n");
+                // printf("\n");
                 break;
             }
         }
@@ -1132,7 +1132,7 @@ vec* calculer_positions(double *r, graphe_angles_reduit gar){
     int pointeur_gauche = 0, pointeur_droite = 3;
     while (pointeur_gauche < pointeur_droite){
         int s = file[pointeur_gauche];
-        printf("en train de regarder %d, %e, %e, %e\n", s, positions[s].x, positions[s].y, r[s]);
+        // printf("en train de regarder %d, %e, %e, %e\n", s, positions[s].x, positions[s].y, r[s]);
         // ecrire_point_python(f, positions[s].x, positions[s].y, "b", s);
         ecrire_cercle_python(f, positions[s].x, positions[s].y, r[s]);
         int j = 0; 
@@ -1143,7 +1143,7 @@ vec* calculer_positions(double *r, graphe_angles_reduit gar){
         bool sens_inverse = false;
         for (int d = 0; d < deg - 1; d++){
             int voisin = get_ivec(gar.H.adj[s], j);
-            printf("voisin %d, %e, %e, %e\n", voisin, positions[voisin].x, positions[voisin].y, r[voisin]);
+            // printf("voisin %d, %e, %e, %e\n", voisin, positions[voisin].x, positions[voisin].y, r[voisin]);
             j = (j+1)%deg;
             int w = get_ivec(gar.H.adj[s], j); 
             if (w == -1){
@@ -1154,11 +1154,11 @@ vec* calculer_positions(double *r, graphe_angles_reduit gar){
             if (places[w]) {
                 continue;
             }
-            printf("pour placer %d, %e\n", w, r[voisin]);
+            // printf("pour placer %d, %e\n", w, r[voisin]);
             double actual_dist = dist(positions[s], positions[voisin]);
             double expected_dist = sqrt(r[s]*r[s] + r[voisin]*r[voisin]);
             if (fabs(actual_dist - expected_dist) > 1e-6) {
-                printf("Layout Error: Node %d and %d are not at the correct distance!\n", s, voisin);
+                // printf("Layout Error: Node %d and %d are not at the correct distance!\n", s, voisin);
             }
             
             // 1. Correct the distances based on the Bipartite incidence graph
@@ -1208,18 +1208,18 @@ vec* calculer_positions(double *r, graphe_angles_reduit gar){
         if (sens_inverse){
         for (int d = 0; d < deg - 2; d++){
             int voisin = get_ivec(gar.H.adj[s], j);
-            printf("voisin %d, %e, %e, %e\n", voisin, positions[voisin].x, positions[voisin].y, r[voisin]);
+            // printf("voisin %d, %e, %e, %e\n", voisin, positions[voisin].x, positions[voisin].y, r[voisin]);
             j = (deg + j - 1)%deg;
             if (places[get_ivec(gar.H.adj[s], j)]) {
                 continue;
             }
             int w = get_ivec(gar.H.adj[s], j); 
-            printf("pour placer %d, %e\n", w, r[voisin]);
+            // printf("pour placer %d, %e\n", w, r[voisin]);
             double actual_dist = dist(positions[s], positions[voisin]);
             double expected_dist = sqrt(r[s]*r[s] + r[voisin]*r[voisin]);
-            if (fabs(actual_dist - expected_dist) > 1e-6) {
-                printf("Layout Error: Node %d and %d are not at the correct distance!\n", s, voisin);
-            }
+            // if (fabs(actual_dist - expected_dist) > 1e-6) {
+            //     printf("Layout Error: Node %d and %d are not at the correct distance!\n", s, voisin);
+            // }
             
             // 1. Correct the distances based on the Bipartite incidence graph
             // 's' and 'w' are adjacent in H, so they are Orthogonal
@@ -1268,13 +1268,13 @@ vec* calculer_positions(double *r, graphe_angles_reduit gar){
         pointeur_gauche++;
     }
 
-    for (int i = 0; i < gar.H.n; i++){
-        if (places[i]) {
-            printf("%e, %e, %e\n", positions[i].x, positions[i].y, r[i]);
-        } else {
-            printf("non placé : %e\n", r[i]);
-        }
-    }
+    // for (int i = 0; i < gar.H.n; i++){
+    //     if (places[i]) {
+    //         printf("%e, %e, %e\n", positions[i].x, positions[i].y, r[i]);
+    //     } else {
+    //         printf("non placé : %e\n", r[i]);
+    //     }
+    // }
 
     // ecrire_footing_python(f);
 
@@ -1366,15 +1366,15 @@ void test_calculer_positions(){
     graphe_angles_reduit gar = calculer_graphe_angles_reduit(plongement_gt_triangule);
     double *r = calculer_rayons(gar, 0.001, 1e-23);
     for (int i = 0; i < 3; i++){
-        printf("%d ", gar.cycle_exterieur[i]);
+        // printf("%d ", gar.cycle_exterieur[i]);
     }
-    printf("\n");
+    // printf("\n");
     afficher_graphe(gar.H);
 
     vec *positions = calculer_positions(r, gar);
 
     for (int i = 0; i < gar.H.n; i++){
-        printf("%e;%e\n", positions[i].x, positions[i].y);
+        // printf("%e;%e\n", positions[i].x, positions[i].y);
     }
 
     free(positions);
@@ -1467,7 +1467,7 @@ void calculer_svg(vec *pos, double *r, graphe_tait gt, plongement p, bool start_
                 pos_intersections[inter_idx].x = (pos[i].x * r[gt.adj[i][j]] + pos[gt.adj[i][j]].x * r[i]) / (r[i] + r[gt.adj[i][j]]);
                 pos_intersections[inter_idx].y = (pos[i].y * r[gt.adj[i][j]] + pos[gt.adj[i][j]].y * r[i]) / (r[i] + r[gt.adj[i][j]]);
                 // fprintf(f, "<circle cx=\"%lf\" cy=\"%lf\" r=\"%lf\" stroke=\"blue\" fill=\"white\"/>\n",pos_intersections[inter_idx].x, pos_intersections[inter_idx].y, 0.01);
-                printf("je place %d avec %d et %d\n", inter_idx, i, gt.adj[i][j]);
+                // printf("je place %d avec %d et %d\n", inter_idx, i, gt.adj[i][j]);
                 ecrire_point_python(f_python, pos_intersections[inter_idx].x, pos_intersections[inter_idx].y, "b", inter_idx);
             }    
         }

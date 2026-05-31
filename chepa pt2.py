@@ -10,7 +10,7 @@ with open("noeuds.txt", "r") as f:
         seq = line.strip()
         print(i)
         i += 1
-        print(f"\"C:\\Users\\natha\\OneDrive\\Bureau\\scripts\\C et C++\\tipe\\a.exe\" ./dossier/{i} {seq}")
+        # print(f"\"C:\\Users\\natha\\OneDrive\\Bureau\\scripts\\C et C++\\tipe\\a.exe\" ./dossier/{i} {seq}")
         if(os.system(f"\"C:\\Users\\natha\\OneDrive\\Bureau\\scripts\\C et C++\\tipe\\a.exe\" ./dossier/{i} {seq}") == 0):
             c += 1
     print(c)
