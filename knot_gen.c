@@ -39,6 +39,13 @@ void print_seq_dt(seq_dt *s) {
     printf("\n");
 }
 
+void fprint_seq_dt(seq_dt *s, FILE* f){
+    fprintf(f, "%d ", s->taille);
+    for(int i = 0; i<s->taille; i++){
+        fprintf(f, "%d ", s->seq[i]);
+    }
+    fprintf(f, "\n");
+}
 
 int abs(int x) {
     return (x < 0) ? -x : x;
@@ -78,33 +85,33 @@ void next_seq_dt(seq_dt *s) {
         fprintf(stderr, "La séquence n'est pas initialisée ou a une taille invalide.\n");
         return;
     }
-    bool est_entierement_negatif = true;
-    for (int i = 0; i < s->taille; i++) {
-        if (s->seq[i] >= 0) {
-            est_entierement_negatif = false;
-            break;
-        }
-    }
+    // bool est_entierement_negatif = true;
+    // for (int i = 0; i < s->taille; i++) {
+    //     if (s->seq[i] >= 0) {
+    //         est_entierement_negatif = false;
+    //         break;
+    //     }
+    // }
 
-    if (!est_entierement_negatif) { // on prend les positions des moins suivantes en binaire
-        int n = 0; // correspond aux positions des moins
-        for (int i = 0; i < s->taille; i++) {
-            n *= 2;
-            if (s->seq[i] < 0) {
-                n++;
-            }
-            // printf("n = %d\n", n);
-        }
+    // if (!est_entierement_negatif) { // on prend les positions des moins suivantes en binaire
+    //     int n = 0; // correspond aux positions des moins
+    //     for (int i = 0; i < s->taille; i++) {
+    //         n *= 2;
+    //         if (s->seq[i] < 0) {
+    //             n++;
+    //         }
+    //         // printf("n = %d\n", n);
+    //     }
 
-        n++;
-        for (int i = s->taille - 1; i >= 0; i--) {
-            s->seq[i] = (n % 2 == 0) ? abs(s->seq[i]) : -abs(s->seq[i]);
-            n /= 2;
-        }
-    } else { // on prend la permutation suivante pour l'ordre lexicographique
-        for (int i = 0; i < s->taille; i++) {
-            s->seq[i] = -s->seq[i]; // on remet les signes à +
-        }
+    //     n++;
+    //     for (int i = s->taille - 1; i >= 0; i--) {
+    //         s->seq[i] = (n % 2 == 0) ? abs(s->seq[i]) : -abs(s->seq[i]);
+    //         n /= 2;
+    //     }
+    // } else { // on prend la permutation suivante pour l'ordre lexicographique
+        // for (int i = 0; i < s->taille; i++) {
+        //     s->seq[i] = -s->seq[i]; // on remet les signes à +
+        // }
 
         int pivot_index = s->taille - 2;
         while (pivot_index >= 0 && s->seq[pivot_index + 1] <= s->seq[pivot_index]) {
@@ -132,7 +139,7 @@ void next_seq_dt(seq_dt *s) {
             s->seq[i] = s->seq[j];
             s->seq[j] = temp;
         }
-    }
+    // }
 }
 
 void test_en_taille_4() {
@@ -282,4 +289,24 @@ void test_regle1(){
     
     printf("%s\n", regle1(&s)==false?"correct":"faux");
     free_seq_dt(&s);
+}
+
+int main2(){
+    int taille = 6;
+    seq_dt s;
+    init_seq_dt(&s, taille);
+
+    for (int i = 1; i <= taille; i++) {
+        s.seq[i-1] = i;
+    }
+    FILE* f = fopen("sequences.txt", "w");
+    while(true){
+        if(regle1(&s)){
+            fprint_seq_dt(&s, f);
+        }
+        next_seq_dt(&s);
+    }
+    fclose(f);
+    
+    return 0;
 }
