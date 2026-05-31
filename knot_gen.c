@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <math.h>
+#include <assert.h>
 
 struct seq_dt {
     int *seq; // on stocke seulement les nombre pairs, divisés par 2
@@ -135,7 +136,6 @@ bool trouver_bst(bst** arbre, seq_dt s){
 }
 
 
-
 // ordre : ordre des permutations, puis ordre des sous parties pour les signes
 void next_seq_dt(seq_dt *s) {
     if (s->seq == NULL || s->taille <= 0) {
@@ -196,41 +196,119 @@ void next_seq_dt(seq_dt *s) {
             s->seq[i] = s->seq[j];
             s->seq[j] = temp;
         }
-    // }
+        // }
+    }
+
+typedef seq_dt r_seq_dt;
+
+r_seq_dt* realiser_seq_dt(seq_dt *s){
+    r_seq_dt *res = malloc(sizeof(r_seq_dt));
+    init_seq_dt(res, 2*s->taille);
+    if (s->seq == NULL || s->taille <= 0) {
+        return res;
+    }
+    for (int i = 0; i < s->taille; i++) {
+        res->seq[2*i] = 2*i+1;
+        res->seq[2*i+1] = 2*s->seq[i];
+    }
+    return res;
 }
 
-void next_seq_dt_std(seq_dt *s, bst *arbre) {
-    if (s->seq == NULL || s->taille <= 0) {
-        fprintf(stderr, "La séquence n'est pas initialisée ou a une taille invalide.\n");
-        return;
+void next_seq_dt_std(seq_dt *s, bst** arbre) {
+    // print_seq_dt(s);
+    while(trouver_bst(arbre, *s)){
+        // print_seq_dt(s);
+        next_seq_dt(s);
+    }
+    // printf("nouvelle\n");
+    //on calcule les seq_dt équivalentes
+    seq_dt next = copy_dt(*s);
+    inserer_bst(arbre, next);
+    //Celles dans le même sens
+    for(int decal = 0; decal < s->taille; decal++){
+        int last = next.seq[0];
+        for(int i = 0; i<next.taille-1; i++){
+            next.seq[i] = next.seq[i+1] - 1;
+            if(next.seq[i] == 0) next.seq[i] = s->taille;
+        }
+        next.seq[next.taille-1] = last - 1;
+        if(next.seq[next.taille-1] == 0) next.seq[next.taille-1] = s->taille;
+        inserer_bst(arbre, next);
+    }
+    r_seq_dt* r = realiser_seq_dt(&next);
+    //Decalage de 1
+    for(int i = 0; i<r->taille; i++){
+        r->seq[i] = r->seq[i]-1;
+        if(r->seq[i] == 0) r->seq[i] = r->taille;
+    }
+    for(int i = 0; i< s->taille; i++){
+        assert((r->seq[2*i+1]-1)%2 == 0);
+        assert((r->seq[2*i])%2 == 0);
+        next.seq[(r->seq[2*i+1]-1)/2] = r->seq[2*i]/2;
+    }
+    //De 2 en 2
+    for(int decal = 0; decal < s->taille; decal++){
+        int last = next.seq[0];
+        for(int i = 0; i<next.taille-1; i++){
+            next.seq[i] = next.seq[i+1] - 1;
+            if(next.seq[i] == 0) next.seq[i] = s->taille;
+        }
+        next.seq[next.taille-1] = last - 1;
+        if(next.seq[next.taille-1] == 0) next.seq[next.taille-1] = s->taille;
+        inserer_bst(arbre, next);
     }
 
-    int pivot_index = s->taille - 2;
-    while (pivot_index >= 0 && s->seq[pivot_index + 1] <= s->seq[pivot_index]) {
-        pivot_index--;
+    //Changement de sens
+    free_seq_dt(&next);
+    next = copy_dt(*s);
+    r = realiser_seq_dt(&next);
+    for(int i = 0; i<r->taille; i++){
+        r->seq[i] = r->taille + 1 - r->seq[i];
+        r->seq[i] = r->seq[i] - 1;
+        if(r->seq[i] == 0) r->seq[i] = r->taille;
+    }
+    for(int i = 0; i< s->taille; i++){
+        assert((r->seq[2*i+1])%2 == 0);
+        assert((r->seq[2*i]-1)%2 == 0);
+        next.seq[(r->seq[2*i]-1)/2] = r->seq[2*i+1]/2;
+    }
+    inserer_bst(arbre, next);
+    //Celles dans l'autre sens
+    for(int decal = 0; decal < s->taille; decal++){
+        int last = next.seq[0];
+        for(int i = 0; i<next.taille-1; i++){
+            next.seq[i] = next.seq[i+1]- 1;
+            if(next.seq[i] == 0) next.seq[i] = s->taille;
+        }
+        next.seq[next.taille-1] = last - 1;
+        if(next.seq[next.taille-1] == 0) next.seq[next.taille-1] = s->taille;
+        inserer_bst(arbre, next);
+    }
+    r = realiser_seq_dt(&next);
+    //Decalage de 1
+    for(int i = 0; i<r->taille; i++){
+        r->seq[i] = r->seq[i]-1;
+        if(r->seq[i] == 0) r->seq[i] = r->taille;
+    }
+    for(int i = 0; i< s->taille; i++){
+        assert((r->seq[2*i+1]-1)%2 == 0);
+        assert((r->seq[2*i])%2 == 0);
+        next.seq[(r->seq[2*i+1]-1)/2] = r->seq[2*i]/2;
+    }
+    inserer_bst(arbre, next);
+    //De 2 en 2
+    for(int decal = 0; decal < s->taille; decal++){
+        int last = next.seq[0];
+        for(int i = 0; i<next.taille-1; i++){
+            next.seq[i] = next.seq[i+1] - 1;
+            if(next.seq[i] == 0) next.seq[i] = s->taille;
+        }
+        next.seq[next.taille-1] = last - 1;
+        if(next.seq[next.taille-1] == 0) next.seq[next.taille-1] = s->taille;
+        inserer_bst(arbre, next);
     }
 
-    if (pivot_index < 0) {
-        printf("Fin de la séquence.\n");
-        free_seq_dt(s);
-        exit(EXIT_SUCCESS);
-        return;
-    }
-
-    int swap_index = s->taille - 1;
-    while (s->seq[swap_index] <= s->seq[pivot_index]) {
-        swap_index--;
-    }
-
-    int temp = s->seq[pivot_index];
-    s->seq[pivot_index] = s->seq[swap_index];
-    s->seq[swap_index] = temp;
-
-    for (int i = pivot_index + 1, j = s->taille - 1; i < j; i++, j--) {
-        int temp = s->seq[i];
-        s->seq[i] = s->seq[j];
-        s->seq[j] = temp;
-    }
+    free_seq_dt(&next);
 }
 
 void test_en_taille_4() {
@@ -249,20 +327,20 @@ void test_en_taille_4() {
     }
 }
 
-typedef seq_dt r_seq_dt;
+bool regle1(seq_dt* s);
 
-r_seq_dt* realiser_seq_dt(seq_dt *s){
-    r_seq_dt *res = malloc(sizeof(r_seq_dt));
-    init_seq_dt(res, 2*s->taille);
-    if (s->seq == NULL || s->taille <= 0) {
-        return res;
+void print_bst(bst* arbre){
+    if (arbre == NULL) {
+        return;
     }
-    for (int i = 0; i < s->taille; i++) {
-        res->seq[2*i] = 2*i+1;
-        res->seq[2*i+1] = 2*s->seq[i];
+    print_bst(arbre->g);
+    if(regle1(&(arbre->val))){
+        print_seq_dt(&(arbre->val));
     }
-    return res;
+    print_seq_dt(&(arbre->val));
+    print_bst(arbre->d);
 }
+
 
 int * init_UF(int n){
     int *arbre = malloc(sizeof(int) * n);
@@ -382,22 +460,28 @@ void test_regle1(){
     free_seq_dt(&s);
 }
 
-int main2(){
-    int taille = 6;
+int main(){
+    int taille = 7;
     seq_dt s;
     init_seq_dt(&s, taille);
 
     for (int i = 1; i <= taille; i++) {
         s.seq[i-1] = i;
     }
+    int seq[7] = {2, 4, 6, 7, 1, 3, 5};
+    s.seq = seq;
     FILE* f = fopen("sequences.txt", "w");
-    while(true){
-        if(regle1(&s)){
-            fprint_seq_dt(&s, f);
-        }
-        next_seq_dt(&s);
-    }
+    bst* arbre = NULL;
+    // while(true){
+        // if(regle1(&s)){
+        //     fprint_seq_dt(&s, f);
+        // }
+        next_seq_dt_std(&s, &arbre);
+    // }
     fclose(f);
+    // inserer_bst(&arbre, s);
+    print_bst(arbre);
+
     
     return 0;
 }
