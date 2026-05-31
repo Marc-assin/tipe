@@ -6,7 +6,7 @@ with open("sequences.txt", "r") as f:
     i = 0
     for line in l:
         seq = line.strip()
-        print(i, end="\r")
+        print(i)
         i += 1
         if(os.system(rf"C:\Users\Sourangi\Documents\GitHub\tipe\BM.exe {seq}") == 0):
             c += 1
