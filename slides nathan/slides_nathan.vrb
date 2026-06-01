@@ -1,0 +1,4 @@
+\frametitle{Annexe (II) (35/35)}
+
+\lstinputlisting[language=C,firstline=681,lastline=685]{graphe_median_cut.c}
+

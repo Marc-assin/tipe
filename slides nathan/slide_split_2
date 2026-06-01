@@ -1,0 +1,182 @@
+\begin{frame}[fragile]
+\frametitle{Code (1/26)}
+
+\lstinputlisting[language=C,firstline=1,lastline=20]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (2/26)}
+
+\lstinputlisting[language=C,firstline=21,lastline=40]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (3/26)}
+
+\lstinputlisting[language=C,firstline=41,lastline=60]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (4/26)}
+
+\lstinputlisting[language=C,firstline=61,lastline=80]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (5/26)}
+
+\lstinputlisting[language=C,firstline=81,lastline=100]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (6/26)}
+
+\lstinputlisting[language=C,firstline=101,lastline=120]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (7/26)}
+
+\lstinputlisting[language=C,firstline=121,lastline=140]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (8/26)}
+
+\lstinputlisting[language=C,firstline=141,lastline=160]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (9/26)}
+
+\lstinputlisting[language=C,firstline=161,lastline=180]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (10/26)}
+
+\lstinputlisting[language=C,firstline=181,lastline=200]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (11/26)}
+
+\lstinputlisting[language=C,firstline=201,lastline=220]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (12/26)}
+
+\lstinputlisting[language=C,firstline=221,lastline=240]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (13/26)}
+
+\lstinputlisting[language=C,firstline=241,lastline=260]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (14/26)}
+
+\lstinputlisting[language=C,firstline=261,lastline=280]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (15/26)}
+
+\lstinputlisting[language=C,firstline=281,lastline=300]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (16/26)}
+
+\lstinputlisting[language=C,firstline=301,lastline=320]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (17/26)}
+
+\lstinputlisting[language=C,firstline=321,lastline=340]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (18/26)}
+
+\lstinputlisting[language=C,firstline=341,lastline=360]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (19/26)}
+
+\lstinputlisting[language=C,firstline=361,lastline=380]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (20/26)}
+
+\lstinputlisting[language=C,firstline=381,lastline=400]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (21/26)}
+
+\lstinputlisting[language=C,firstline=401,lastline=420]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (22/26)}
+
+\lstinputlisting[language=C,firstline=421,lastline=440]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (23/26)}
+
+\lstinputlisting[language=C,firstline=441,lastline=460]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (24/26)}
+
+\lstinputlisting[language=C,firstline=461,lastline=480]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (25/26)}
+
+\lstinputlisting[language=C,firstline=481,lastline=500]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (26/26)}
+
+\lstinputlisting[language=C,firstline=501,lastline=520]{knot_gen_cut.c}
+
+\end{frame}
+

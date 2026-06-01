@@ -1,0 +1,601 @@
+\documentclass{beamer}
+
+\usepackage[french]{babel}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{svg}
+
+% Colors
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.97,0.97,0.97}
+
+% Listing style
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen}\itshape,
+    keywordstyle=\color{blue},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\scriptsize,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=4,
+    frame=single,
+}
+
+\lstset{style=mystyle}
+
+\newcommand{\comment}[1]{}
+
+\begin{document}
+
+\title{Automatisation de la génération et de l'affichage de noeuds premiers alternés}
+
+\author{Nathan Landau \and Marc Descamps}
+\date{Numéro de candidat: 23045}
+
+% =========================
+% SLIDE 1 - TITLE
+% =========================
+\begin{frame}
+\maketitle
+\end{frame}
+
+% =========================
+% SLIDE 2 - PLAN
+% =========================
+\begin{frame}
+\frametitle{Plan}
+\begin{itemize}
+    \item \textbf{1. Séquences DT}
+    \begin{itemize}
+        \item Noeud, premier, alterné…
+        \item Séquence DT
+        \item Énumération des séquences DT standard
+        \item Filtrage des séquences
+    \end{itemize}
+
+    \item \textbf{2. Transformations de graphes}
+    \begin{itemize}
+        \item Dessin de Lombardi
+        \item Graphe de Tait, graphe médial, graphe des angles réduit
+        \item Empilement des cercles primaux/duaux
+    \end{itemize}
+
+    \item \textbf{3. Calculs géométriques et résultats}
+    \begin{itemize}
+        \item Calcul des rayons (descente de gradient)
+        \item Calcul des positions
+        \item Calculs géométriques
+        \item Résultats
+    \end{itemize}
+\end{itemize}
+\end{frame}
+
+
+\section{Séquences DT}
+% =========================
+% SLIDE 3
+% =========================
+\begin{frame}[plain,c]
+\frametitle{Noeud, premier, alterné…}
+\centering
+\includesvg[inkscapearea=page]{graphiques/noeud_premier}
+\end{frame}
+
+% =========================
+% SLIDE 4
+% =========================
+\begin{frame}
+\frametitle{Séquence DT}
+\centering
+\includesvg[inkscapearea=page]{graphiques/seq_dt}
+$$(1, 4), (3, 6), (5, 2)\Longrightarrow 2~6~4$$
+\end{frame}
+
+% =========================
+% SLIDE 5
+% =========================
+\begin{frame}
+\frametitle{Énumération des séquences DT standard}
+\end{frame}
+
+% =========================
+% SLIDE 6
+% =========================
+\begin{frame}
+\frametitle{Filtrage des séquences}
+\end{frame}
+
+
+\section{Transformations de graphes}
+% =========================
+% SLIDE 7
+% =========================
+\begin{frame}
+\frametitle{Dessin de Lombardi}
+\end{frame}
+
+% =========================
+% SLIDE 8
+% =========================
+\begin{frame}
+\frametitle{Graphe de Tait, graphe médial, graphe des angles réduit}
+\end{frame}
+
+% =========================
+% SLIDE 9
+% =========================
+\begin{frame}
+\frametitle{Empilement des cercles primaux/duaux}
+\end{frame}
+
+
+\section{Calculs géométriques et résultats}
+% =========================
+% SLIDE 10
+% =========================
+\begin{frame}
+\frametitle{Calcul des rayons (descente de gradient)}
+\end{frame}
+
+% =========================
+% SLIDE 11
+% =========================
+\begin{frame}
+\frametitle{Calcul des positions}
+\end{frame}
+
+% =========================
+% SLIDE 12
+% =========================
+\begin{frame}
+\frametitle{Calculs géométriques}
+\end{frame}
+
+% =========================
+% SLIDE 13
+% =========================
+\begin{frame}
+\frametitle{Résultats}
+\end{frame}
+
+\section{Annexe}
+{
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (I) (1/26)}
+
+\lstinputlisting[language=C,firstline=1,lastline=20]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (I) (2/26)}
+
+\lstinputlisting[language=C,firstline=21,lastline=40]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (I) (3/26)}
+
+\lstinputlisting[language=C,firstline=41,lastline=60]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (I) (4/26)}
+
+\lstinputlisting[language=C,firstline=61,lastline=80]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (I) (5/26)}
+
+\lstinputlisting[language=C,firstline=81,lastline=100]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (I) (6/26)}
+
+\lstinputlisting[language=C,firstline=101,lastline=120]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (I) (7/26)}
+
+\lstinputlisting[language=C,firstline=121,lastline=140]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (I) (8/26)}
+
+\lstinputlisting[language=C,firstline=141,lastline=160]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (I) (9/26)}
+
+\lstinputlisting[language=C,firstline=161,lastline=180]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (I) (10/26)}
+
+\lstinputlisting[language=C,firstline=181,lastline=200]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (I) (11/26)}
+
+\lstinputlisting[language=C,firstline=201,lastline=220]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (I) (12/26)}
+
+\lstinputlisting[language=C,firstline=221,lastline=240]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (I) (13/26)}
+
+\lstinputlisting[language=C,firstline=241,lastline=260]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (I) (14/26)}
+
+\lstinputlisting[language=C,firstline=261,lastline=280]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (I) (15/26)}
+
+\lstinputlisting[language=C,firstline=281,lastline=300]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (I) (16/26)}
+
+\lstinputlisting[language=C,firstline=301,lastline=320]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (I) (17/26)}
+
+\lstinputlisting[language=C,firstline=321,lastline=340]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (I) (18/26)}
+
+\lstinputlisting[language=C,firstline=341,lastline=360]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (I) (19/26)}
+
+\lstinputlisting[language=C,firstline=361,lastline=380]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (I) (20/26)}
+
+\lstinputlisting[language=C,firstline=381,lastline=400]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (I) (21/26)}
+
+\lstinputlisting[language=C,firstline=401,lastline=420]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (I) (22/26)}
+
+\lstinputlisting[language=C,firstline=421,lastline=440]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (I) (23/26)}
+
+\lstinputlisting[language=C,firstline=441,lastline=460]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (I) (24/26)}
+
+\lstinputlisting[language=C,firstline=461,lastline=480]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (I) (25/26)}
+
+\lstinputlisting[language=C,firstline=481,lastline=500]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (I) (26/26)}
+
+\lstinputlisting[language=C,firstline=501,lastline=520]{knot_gen_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (II) (1/35)}
+
+\lstinputlisting[language=C,firstline=1,lastline=20]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (II) (2/35)}
+
+\lstinputlisting[language=C,firstline=21,lastline=40]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (II) (3/35)}
+
+\lstinputlisting[language=C,firstline=41,lastline=60]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (II) (4/35)}
+
+\lstinputlisting[language=C,firstline=61,lastline=80]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (II) (5/35)}
+
+\lstinputlisting[language=C,firstline=81,lastline=100]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (II) (6/35)}
+
+\lstinputlisting[language=C,firstline=101,lastline=120]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (II) (7/35)}
+
+\lstinputlisting[language=C,firstline=121,lastline=140]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (II) (8/35)}
+
+\lstinputlisting[language=C,firstline=141,lastline=160]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (II) (9/35)}
+
+\lstinputlisting[language=C,firstline=161,lastline=180]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (II) (10/35)}
+
+\lstinputlisting[language=C,firstline=181,lastline=200]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (II) (11/35)}
+
+\lstinputlisting[language=C,firstline=201,lastline=220]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (II) (12/35)}
+
+\lstinputlisting[language=C,firstline=221,lastline=240]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (II) (13/35)}
+
+\lstinputlisting[language=C,firstline=241,lastline=260]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (II) (14/35)}
+
+\lstinputlisting[language=C,firstline=261,lastline=280]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (II) (15/35)}
+
+\lstinputlisting[language=C,firstline=281,lastline=300]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (II) (16/35)}
+
+\lstinputlisting[language=C,firstline=301,lastline=320]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (II) (17/35)}
+
+\lstinputlisting[language=C,firstline=321,lastline=340]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (II) (18/35)}
+
+\lstinputlisting[language=C,firstline=341,lastline=360]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (II) (19/35)}
+
+\lstinputlisting[language=C,firstline=361,lastline=380]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (II) (20/35)}
+
+\lstinputlisting[language=C,firstline=381,lastline=400]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (II) (21/35)}
+
+\lstinputlisting[language=C,firstline=401,lastline=420]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (II) (22/35)}
+
+\lstinputlisting[language=C,firstline=421,lastline=440]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (II) (23/35)}
+
+\lstinputlisting[language=C,firstline=441,lastline=460]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (II) (24/35)}
+
+\lstinputlisting[language=C,firstline=461,lastline=480]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (II) (25/35)}
+
+\lstinputlisting[language=C,firstline=481,lastline=500]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (II) (26/35)}
+
+\lstinputlisting[language=C,firstline=501,lastline=520]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (II) (27/35)}
+
+\lstinputlisting[language=C,firstline=521,lastline=540]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (II) (28/35)}
+
+\lstinputlisting[language=C,firstline=541,lastline=560]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (II) (29/35)}
+
+\lstinputlisting[language=C,firstline=561,lastline=580]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (II) (30/35)}
+
+\lstinputlisting[language=C,firstline=581,lastline=600]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (II) (31/35)}
+
+\lstinputlisting[language=C,firstline=601,lastline=620]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (II) (32/35)}
+
+\lstinputlisting[language=C,firstline=621,lastline=640]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (II) (33/35)}
+
+\lstinputlisting[language=C,firstline=641,lastline=660]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (II) (34/35)}
+
+\lstinputlisting[language=C,firstline=661,lastline=680]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks]
+\frametitle{Annexe (II) (35/35)}
+
+\lstinputlisting[language=C,firstline=681,lastline=685]{graphe_median_cut.c}
+
+\end{frame}
+}
+
+\end{document}

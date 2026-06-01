@@ -1,0 +1,245 @@
+\begin{frame}[fragile]
+\frametitle{Code (1/35)}
+
+\lstinputlisting[language=C,firstline=1,lastline=20]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (2/35)}
+
+\lstinputlisting[language=C,firstline=21,lastline=40]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (3/35)}
+
+\lstinputlisting[language=C,firstline=41,lastline=60]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (4/35)}
+
+\lstinputlisting[language=C,firstline=61,lastline=80]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (5/35)}
+
+\lstinputlisting[language=C,firstline=81,lastline=100]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (6/35)}
+
+\lstinputlisting[language=C,firstline=101,lastline=120]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (7/35)}
+
+\lstinputlisting[language=C,firstline=121,lastline=140]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (8/35)}
+
+\lstinputlisting[language=C,firstline=141,lastline=160]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (9/35)}
+
+\lstinputlisting[language=C,firstline=161,lastline=180]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (10/35)}
+
+\lstinputlisting[language=C,firstline=181,lastline=200]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (11/35)}
+
+\lstinputlisting[language=C,firstline=201,lastline=220]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (12/35)}
+
+\lstinputlisting[language=C,firstline=221,lastline=240]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (13/35)}
+
+\lstinputlisting[language=C,firstline=241,lastline=260]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (14/35)}
+
+\lstinputlisting[language=C,firstline=261,lastline=280]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (15/35)}
+
+\lstinputlisting[language=C,firstline=281,lastline=300]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (16/35)}
+
+\lstinputlisting[language=C,firstline=301,lastline=320]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (17/35)}
+
+\lstinputlisting[language=C,firstline=321,lastline=340]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (18/35)}
+
+\lstinputlisting[language=C,firstline=341,lastline=360]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (19/35)}
+
+\lstinputlisting[language=C,firstline=361,lastline=380]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (20/35)}
+
+\lstinputlisting[language=C,firstline=381,lastline=400]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (21/35)}
+
+\lstinputlisting[language=C,firstline=401,lastline=420]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (22/35)}
+
+\lstinputlisting[language=C,firstline=421,lastline=440]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (23/35)}
+
+\lstinputlisting[language=C,firstline=441,lastline=460]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (24/35)}
+
+\lstinputlisting[language=C,firstline=461,lastline=480]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (25/35)}
+
+\lstinputlisting[language=C,firstline=481,lastline=500]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (26/35)}
+
+\lstinputlisting[language=C,firstline=501,lastline=520]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (27/35)}
+
+\lstinputlisting[language=C,firstline=521,lastline=540]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (28/35)}
+
+\lstinputlisting[language=C,firstline=541,lastline=560]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (29/35)}
+
+\lstinputlisting[language=C,firstline=561,lastline=580]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (30/35)}
+
+\lstinputlisting[language=C,firstline=581,lastline=600]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (31/35)}
+
+\lstinputlisting[language=C,firstline=601,lastline=620]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (32/35)}
+
+\lstinputlisting[language=C,firstline=621,lastline=640]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (33/35)}
+
+\lstinputlisting[language=C,firstline=641,lastline=660]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (34/35)}
+
+\lstinputlisting[language=C,firstline=661,lastline=680]{graphe_median_cut.c}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code (35/35)}
+
+\lstinputlisting[language=C,firstline=681,lastline=685]{graphe_median_cut.c}
+
+\end{frame}
+
