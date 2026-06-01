@@ -1,6 +1,6 @@
 import os
 
-with open("seq.twt", "r") as f:
+with open("sequences.txt", "r") as f:
     l = f.readlines()
     c = 0
     i = 0
