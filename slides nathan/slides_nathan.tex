@@ -4,6 +4,7 @@
 \usepackage{xcolor}
 \usepackage{listings}
 \usepackage{svg}
+\usepackage[normalem]{ulem}
 
 % Colors
 \definecolor{codegreen}{rgb}{0,0.6,0}
@@ -106,6 +107,16 @@ $$(1, 4), (3, 6), (5, 2)\Longrightarrow 2~6~4$$
 % =========================
 \begin{frame}
 \frametitle{Énumération des séquences DT standard}
+\vfill
+\centering
+\begin{itemize}
+    \item \texttt{8 10 12 14 2 4 6} $\Longleftarrow$ \textit{Nouvelle séquence!}
+    \item \texttt{\sout{8 10 12 14 2 6 4}} $\Longleftarrow$ \textit{Dans l'ABR}
+    \item \texttt{\sout{8 10 12 14 4 2 6}} $\Longleftarrow$ \textit{Dans l'ABR}
+    \item \texttt{8 10 12 14 4 6 2} $\Longleftarrow$ \textit{Nouvelle séquence!}
+    \item \texttt{\sout{8 10 12 14 6 2 4}} $\Longleftarrow$ \textit{Dans l'ABR}
+\end{itemize}
+\vfill
 \end{frame}
 
 % =========================
@@ -128,7 +139,14 @@ $$(1, 4), (3, 6), (5, 2)\Longrightarrow 2~6~4$$
 % SLIDE 8
 % =========================
 \begin{frame}
-\frametitle{Graphe de Tait, graphe médial, graphe des angles réduit}
+\frametitle{Graphe de Tait, dual, médial, des angles réduit}
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.7\textwidth]{6_2 medial graph.png}
+    \caption{Graphe médial (\cite{Lombardi})}
+    \label{fig:medial}
+\end{figure}
+
 \end{frame}
 
 % =========================
