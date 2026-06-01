@@ -311,7 +311,7 @@ void next_seq_dt_std(seq_dt *s, bst** arbre) {
     free_seq_dt(&next);
 }
 
-void next_seq_dt_std(seq_dt *s, bst** arbre) {
+void next_seq_dt_std2(seq_dt *s, bst** arbre) {
     while(trouver_bst(arbre, *s)){
         next_seq_dt(s);
     }
@@ -535,7 +535,7 @@ void test_regle1(){
     free_seq_dt(&s);
 }
 
-int main(){
+int main2(){
     int taille = 7;
     seq_dt s;
     init_seq_dt(&s, taille);
