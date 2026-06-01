@@ -311,13 +311,10 @@ void next_seq_dt_std(seq_dt *s, bst** arbre) {
     free_seq_dt(&next);
 }
 
-void next_seq_dt_std2(seq_dt *s, bst** arbre) {
-    // print_seq_dt(s);
+void next_seq_dt_std(seq_dt *s, bst** arbre) {
     while(trouver_bst(arbre, *s)){
-        // print_seq_dt(s);
         next_seq_dt(s);
     }
-    // printf("nouvelle\n");
     //on calcule les seq_dt équivalentes
     seq_dt next = copy_dt(*s);
     inserer_bst(arbre, next);

@@ -895,7 +895,7 @@ void descente(graphe_comb* gtilde, int c){
                 break;
             }
         }
-        if(gtilde->P != NULL) break;
+        assert(gtilde->P == NULL);
     }
 }
 
@@ -1150,9 +1150,10 @@ graphe BoyerMyrvold(seq_dt seq){
         gtilde.A[gtilde.R[c->val].lien[0].index].adj[0].index = gtilde.S[0].adj[1].index;
         gtilde.S[0].adj[1].index = gtilde.R[c->val].lien[1].index;
     }
-
-    //A FAIRE Tout libérer
-
+    liberer_graphe(g);
+    liberer_graphe(g_simple);
+    liberer_graphe_comb(gtilde);
+    free(associations);
     graphe res = extraction_BM(gtilde, g_simple, arbre_DFS, associations);
     return res;
 }
